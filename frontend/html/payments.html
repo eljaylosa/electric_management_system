@@ -76,8 +76,11 @@
                     success: function(response) {
                         if (response.status === 'success') {
                             let rows = '';
-                            response.data.forEach(bill => {
-                                if (bill.status === 'paid') {
+                            let paidBills = response.data.filter(bill => bill.status === 'paid');
+                            if (paidBills.length === 0) {
+                                rows = '<tr><td colspan="4" style="text-align:center;">No payments found.</td></tr>';
+                            } else {
+                                paidBills.forEach(bill => {
                                     rows += `
                                         <tr>
                                             <td data-label="Consumer">${bill.consumer_name}</td>
@@ -86,10 +89,16 @@
                                             <td data-label="Payment Date">${bill.due_date}</td>
                                         </tr>
                                     `;
-                                }
-                            });
+                                });
+                            }
                             $('#paymentsTable tbody').html(rows);
+                        } else {
+                            alert('Error: ' + response.message);
                         }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('AJAX Error: ' + status + ' - ' + error);
+                        $('#paymentsTable tbody').html('<tr><td colspan="4" style="text-align:center; color:red;">Failed to load data. Check console for details.</td></tr>');
                     }
                 });
             }

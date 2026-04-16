@@ -84,23 +84,33 @@
                     success: function(response) {
                         if (response.status === 'success') {
                             let rows = '';
-                            response.data.forEach(consumer => {
-                                rows += `
-                                    <tr>
-                                        <td data-label="Name">${consumer.name}</td>
-                                        <td data-label="Address">${consumer.address}</td>
-                                        <td data-label="Contact">${consumer.contact}</td>
-                                        <td data-label="Meter No">${consumer.meter_no}</td>
-                                        <td data-label="Category">${consumer.category_name}</td>
-                                        <td data-label="Actions">
-                                            <button class="btn btn-primary editBtn" data-id="${consumer.id}">Edit</button>
-                                            <button class="btn btn-danger deleteBtn" data-id="${consumer.id}">Delete</button>
-                                        </td>
-                                    </tr>
-                                `;
-                            });
+                            if (response.data.length === 0) {
+                                rows = '<tr><td colspan="6" style="text-align:center;">No consumers found.</td></tr>';
+                            } else {
+                                response.data.forEach(consumer => {
+                                    rows += `
+                                        <tr>
+                                            <td data-label="Name">${consumer.name}</td>
+                                            <td data-label="Address">${consumer.address}</td>
+                                            <td data-label="Contact">${consumer.contact}</td>
+                                            <td data-label="Meter No">${consumer.meter_no}</td>
+                                            <td data-label="Category">${consumer.category_name}</td>
+                                            <td data-label="Actions">
+                                                <button class="btn btn-primary editBtn" data-id="${consumer.id}">Edit</button>
+                                                <button class="btn btn-danger deleteBtn" data-id="${consumer.id}">Delete</button>
+                                            </td>
+                                        </tr>
+                                    `;
+                                });
+                            }
                             $('#consumersTable tbody').html(rows);
+                        } else {
+                            alert('Error: ' + response.message);
                         }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('AJAX Error: ' + status + ' - ' + error);
+                        $('#consumersTable tbody').html('<tr><td colspan="6" style="text-align:center; color:red;">Failed to load data. Check console for details.</td></tr>');
                     }
                 });
             }

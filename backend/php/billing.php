@@ -13,7 +13,7 @@ if (!isLoggedIn()) {
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     // Get all bills
     if (isset($_GET['action']) && $_GET['action'] === 'get_all_bills') {
-        $stmt = $conn->prepare("SELECT b.id, c.name AS consumer_name, r.curr_reading, r.prev_reading, b.amount, b.due_date, b.status FROM bills b JOIN readings r ON b.reading_id = r.id JOIN consumers c ON r.consumer_id = c.id");
+        $stmt = $conn->prepare("SELECT b.id, IFNULL(c.name, 'Unknown') AS consumer_name, IFNULL(r.curr_reading, 0) AS curr_reading, IFNULL(r.prev_reading, 0) AS prev_reading, b.amount, b.due_date, b.status FROM bills b LEFT JOIN readings r ON b.reading_id = r.id LEFT JOIN consumers c ON r.consumer_id = c.id");
         $stmt->execute();
         $result = $stmt->get_result();
         $bills = [];

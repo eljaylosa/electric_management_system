@@ -13,7 +13,7 @@ if (!isLoggedIn()) {
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     // Get all consumers
     if (isset($_GET['action']) && $_GET['action'] === 'get_all') {
-        $stmt = $conn->prepare("SELECT c.id, c.name, c.address, c.contact, c.meter_no, cat.name AS category_name, cat.rate_per_kwh FROM consumers c JOIN categories cat ON c.category_id = cat.id");
+        $stmt = $conn->prepare("SELECT c.id, c.name, c.address, c.contact, c.meter_no, IFNULL(cat.name, 'Uncategorized') AS category_name, IFNULL(cat.rate_per_kwh, 0) AS rate_per_kwh FROM consumers c LEFT JOIN categories cat ON c.category_id = cat.id");
         $stmt->execute();
         $result = $stmt->get_result();
         $consumers = [];

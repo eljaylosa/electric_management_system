@@ -83,23 +83,33 @@
                     success: function(response) {
                         if (response.status === 'success') {
                             let rows = '';
-                            response.data.forEach(bill => {
-                                rows += `
-                                    <tr>
-                                        <td data-label="Consumer">${bill.consumer_name}</td>
-                                        <td data-label="Prev Reading">${bill.prev_reading}</td>
-                                        <td data-label="Curr Reading">${bill.curr_reading}</td>
-                                        <td data-label="Amount">$${parseFloat(bill.amount).toFixed(2)}</td>
-                                        <td data-label="Due Date">${bill.due_date}</td>
-                                        <td data-label="Status">${bill.status}</td>
-                                        <td data-label="Actions">
-                                            <button class="btn btn-primary viewBillBtn" data-id="${bill.id}">View</button>
-                                        </td>
-                                    </tr>
-                                `;
-                            });
+                            if (response.data.length === 0) {
+                                rows = '<tr><td colspan="7" style="text-align:center;">No bills found.</td></tr>';
+                            } else {
+                                response.data.forEach(bill => {
+                                    rows += `
+                                        <tr>
+                                            <td data-label="Consumer">${bill.consumer_name}</td>
+                                            <td data-label="Prev Reading">${bill.prev_reading}</td>
+                                            <td data-label="Curr Reading">${bill.curr_reading}</td>
+                                            <td data-label="Amount">$${parseFloat(bill.amount).toFixed(2)}</td>
+                                            <td data-label="Due Date">${bill.due_date}</td>
+                                            <td data-label="Status">${bill.status}</td>
+                                            <td data-label="Actions">
+                                                <button class="btn btn-primary viewBillBtn" data-id="${bill.id}">View</button>
+                                            </td>
+                                        </tr>
+                                    `;
+                                });
+                            }
                             $('#billsTable tbody').html(rows);
+                        } else {
+                            alert('Error: ' + response.message);
                         }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('AJAX Error: ' + status + ' - ' + error);
+                        $('#billsTable tbody').html('<tr><td colspan="7" style="text-align:center; color:red;">Failed to load data. Check console for details.</td></tr>');
                     }
                 });
             }
