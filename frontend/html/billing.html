@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Billing - Electric Management System</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <nav>
+        <div class="nav-container">
+            <div class="nav-logo">Electric MS</div>
+            <button class="nav-toggle" id="navToggle">&#9776;</button>
+            <ul id="navMenu">
+                <li><a href="dashboard.html">Dashboard</a></li>
+                <li><a href="consumers.html">Consumers</a></li>
+                <li><a href="billing.html">Billing</a></li>
+                <li><a href="payments.html">Payments</a></li>
+                <li><a href="../../backend/php/auth.php?action=logout">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>Billing Management</h1>
+        <button class="btn btn-success" id="addReadingBtn">Add New Reading</button>
+
+        <div id="readingFormContainer" style="display: none; margin-top: 20px;">
+            <h2>Add New Reading</h2>
+            <form id="readingForm">
+                <input type="hidden" name="action" value="add_reading">
+                <label for="consumer_id">Consumer</label>
+                <select id="consumer_id" name="consumer_id" required>
+                    <!-- Consumers will be loaded here via AJAX -->
+                </select>
+                <label for="prev_reading">Previous Reading</label>
+                <input type="number" id="prev_reading" name="prev_reading" step="0.01" required>
+                <label for="curr_reading">Current Reading</label>
+                <input type="number" id="curr_reading" name="curr_reading" step="0.01" required>
+                <label for="reading_date">Reading Date</label>
+                <input type="date" id="reading_date" name="reading_date" required>
+                <label for="due_date">Due Date</label>
+                <input type="date" id="due_date" name="due_date" required>
+                <button type="submit">Generate Bill</button>
+                <button type="button" class="btn btn-danger" id="cancelBtn" style="width: 100%; margin-top: 10px;">Cancel</button>
+            </form>
+        </div>
+
+        <div class="table-responsive">
+            <table id="billsTable">
+                <thead>
+                    <tr>
+                        <th>Consumer</th>
+                        <th>Prev Reading</th>
+                        <th>Curr Reading</th>
+                        <th>Amount</th>
+                        <th>Due Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Bills will be loaded here via AJAX -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            // Mobile Navigation Toggle
+            $('#navToggle').on('click', function() {
+                $('#navMenu').toggleClass('active');
+            });
+
+            // Load all bills
+            function loadBills() {
+                $.ajax({
+                    url: '../../backend/php/billing.php?action=get_all_bills',
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.status === 'success') {
+                            let rows = '';
+                            response.data.forEach(bill => {
+                                rows += `
+                                    <tr>
+                                        <td data-label="Consumer">${bill.consumer_name}</td>
+                                        <td data-label="Prev Reading">${bill.prev_reading}</td>
+                                        <td data-label="Curr Reading">${bill.curr_reading}</td>
+                                        <td data-label="Amount">$${parseFloat(bill.amount).toFixed(2)}</td>
+                                        <td data-label="Due Date">${bill.due_date}</td>
+                                        <td data-label="Status">${bill.status}</td>
+                                        <td data-label="Actions">
+                                            <button class="btn btn-primary viewBillBtn" data-id="${bill.id}">View</button>
+                                        </td>
+                                    </tr>
+                                `;
+                            });
+                            $('#billsTable tbody').html(rows);
+                        }
+                    }
+                });
+            }
+
+            loadBills();
+
+            // Load consumers for the dropdown
+            function loadConsumersForDropdown() {
+                $.ajax({
+                    url: '../../backend/php/consumers.php?action=get_all',
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.status === 'success') {
+                            let options = '<option value="">Select Consumer</option>';
+                            response.data.forEach(consumer => {
+                                options += `<option value="${consumer.id}">${consumer.name} (${consumer.meter_no})</option>`;
+                            });
+                            $('#consumer_id').html(options);
+                        }
+                    }
+                });
+            }
+
+            // Show add reading form
+            $('#addReadingBtn').on('click', function() {
+                loadConsumersForDropdown();
+                $('#readingForm')[0].reset();
+                $('#readingFormContainer').show();
+                $('html, body').animate({ scrollTop: $("#readingFormContainer").offset().top }, 500);
+            });
+
+            // Cancel form
+            $('#cancelBtn').on('click', function() {
+                $('#readingFormContainer').hide();
+            });
+
+            // Submit reading form
+            $('#readingForm').on('submit', function(e) {
+                e.preventDefault();
+                $.ajax({
+                    url: '../../backend/php/billing.php',
+                    type: 'POST',
+                    data: $(this).serialize(),
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.status === 'success') {
+                            alert(response.message);
+                            $('#readingFormContainer').hide();
+                            loadBills();
+                        } else {
+                            alert(response.message);
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
