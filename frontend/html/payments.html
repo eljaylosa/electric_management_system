@@ -84,8 +84,8 @@
                                     rows += `
                                         <tr>
                                             <td data-label="Consumer">${bill.consumer_name}</td>
-                                            <td data-label="Bill Amount">$${parseFloat(bill.amount).toFixed(2)}</td>
-                                            <td data-label="Amount Paid">$${parseFloat(bill.amount).toFixed(2)}</td>
+                                            <td data-label="Bill Amount">₱${parseFloat(bill.amount).toFixed(2)}</td>
+                                            <td data-label="Amount Paid">₱${parseFloat(bill.amount).toFixed(2)}</td>
                                             <td data-label="Payment Date">${bill.due_date}</td>
                                         </tr>
                                     `;
@@ -116,7 +116,7 @@
                             let options = '<option value="">Select Unpaid Bill</option>';
                             response.data.forEach(bill => {
                                 if (bill.status === 'unpaid') {
-                                    options += `<option value="${bill.id}" data-amount="${bill.amount}">${bill.consumer_name} - $${parseFloat(bill.amount).toFixed(2)}</option>`;
+                                    options += `<option value="${bill.id}" data-amount="${bill.amount}">${bill.consumer_name} - ₱${parseFloat(bill.amount).toFixed(2)}</option>`;
                                 }
                             });
                             $('#bill_id').html(options);

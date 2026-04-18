@@ -3,6 +3,8 @@ session_start();
 require_once 'config.php';
 require_once 'auth.php';
 
+header('Content-Type: application/json');
+
 // Check if user is logged in
 if (!isLoggedIn()) {
     echo json_encode(['status' => 'error', 'message' => 'Unauthorized access']);

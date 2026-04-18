@@ -5,7 +5,9 @@ CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
-    role ENUM('admin', 'staff') NOT NULL
+    role ENUM('admin', 'staff', 'customer') NOT NULL,
+    consumer_id INT DEFAULT NULL,
+    FOREIGN KEY (consumer_id) REFERENCES consumers(id) ON DELETE SET NULL
 );
 
 -- Table: categories (for consumer types and their rates)

@@ -3,27 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Electric Management System</title>
+    <title>Sign Up - Electric Management System</title>
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
     <div class="container" style="max-width: 400px; margin-top: 50px;">
-        <h1 style="text-align: center;">Login</h1>
-        <form id="loginForm">
-            <input type="hidden" name="action" value="login">
+        <h1 style="text-align: center;">Customer Sign Up</h1>
+        <form id="signupForm">
+            <input type="hidden" name="action" value="signup">
             <label for="username">Username</label>
             <input type="text" id="username" name="username" required>
             <label for="password">Password</label>
             <input type="password" id="password" name="password" required>
-            <button type="submit">Login</button>
+            <label for="meter_no">Meter Number</label>
+            <input type="text" id="meter_no" name="meter_no" placeholder="Enter your registered meter number" required>
+            <button type="submit">Sign Up</button>
         </form>
-        <div id="loginMessage" style="text-align: center; margin-top: 10px; color: #e74c3c;"></div>
+        <div id="signupMessage" style="text-align: center; margin-top: 10px;"></div>
+        <p style="text-align: center; margin-top: 20px;">Already have an account? <a href="login.html">Login here</a></p>
     </div>
 
     <script>
         $(document).ready(function() {
-            $('#loginForm').on('submit', function(e) {
+            $('#signupForm').on('submit', function(e) {
                 e.preventDefault();
                 $.ajax({
                     url: '../../backend/php/auth.php',
@@ -32,17 +35,16 @@
                     dataType: 'json',
                     success: function(response) {
                         if (response.status === 'success') {
-                            if (response.role === 'customer') {
-                                window.location.href = 'customer_dashboard.html';
-                            } else {
-                                window.location.href = 'dashboard.html';
-                            }
+                            $('#signupMessage').css('color', '#2ecc71').text(response.message);
+                            setTimeout(function() {
+                                window.location.href = 'login.html';
+                            }, 2000);
                         } else {
-                            $('#loginMessage').text(response.message);
+                            $('#signupMessage').css('color', '#e74c3c').text(response.message);
                         }
                     },
                     error: function() {
-                        $('#loginMessage').text('An error occurred. Please try again.');
+                        $('#signupMessage').css('color', '#e74c3c').text('An error occurred. Please try again.');
                     }
                 });
             });
@@ -50,10 +52,3 @@
     </script>
 </body>
 </html>
-
-<script>
-    // Add sign-up link after the form
-    $(document).ready(function() {
-        $('#loginForm').after('<p style="text-align: center; margin-top: 20px;">Are you a customer? <a href="signup.html">Sign up here</a></p>');
-    });
-</script>

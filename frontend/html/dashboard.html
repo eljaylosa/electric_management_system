@@ -93,8 +93,30 @@
                         }
                     }
                 });
-            }
 
+                // load recent activities (for simplicity, we will just show recent bills)
+                $.ajax({
+                    url: '../../backend/php/billing.php?action=get_recent_bills',
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.status === 'success') {
+                            const activitiesTableBody = $('#recentActivitiesTable tbody');
+                            activitiesTableBody.empty();
+                            response.data.forEach(bill => {
+                                const activityRow = `
+                                    <tr>
+                                        <td>Bill for ${bill.consumer_name} - ₱${bill.amount}</td>
+                                        <td>${new Date(bill.due_date).toLocaleDateString()}</td>
+                                        <td>${bill.status.charAt(0).toUpperCase() + bill.status.slice(1)}</td>
+                                    </tr>
+                                `;
+                                activitiesTableBody.append(activityRow);
+                            });
+                        }
+                    }
+                });
+            }
             loadDashboardData();
         });
     </script>

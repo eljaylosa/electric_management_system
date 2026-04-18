@@ -3,6 +3,8 @@ session_start();
 require_once 'config.php';
 require_once 'auth.php';
 
+header('Content-Type: application/json');
+
 // Check if user is logged in
 if (!isLoggedIn()) {
     echo json_encode(['status' => 'error', 'message' => 'Unauthorized access']);
@@ -13,7 +15,13 @@ if (!isLoggedIn()) {
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     // Get all bills
     if (isset($_GET['action']) && $_GET['action'] === 'get_all_bills') {
-        $stmt = $conn->prepare("SELECT b.id, IFNULL(c.name, 'Unknown') AS consumer_name, IFNULL(r.curr_reading, 0) AS curr_reading, IFNULL(r.prev_reading, 0) AS prev_reading, b.amount, b.due_date, b.status FROM bills b LEFT JOIN readings r ON b.reading_id = r.id LEFT JOIN consumers c ON r.consumer_id = c.id");
+        if (isCustomer()) {
+            $consumer_id = $_SESSION['consumer_id'];
+            $stmt = $conn->prepare("SELECT b.id, c.name AS consumer_name, r.curr_reading, r.prev_reading, b.amount, b.due_date, b.status FROM bills b JOIN readings r ON b.reading_id = r.id JOIN consumers c ON r.consumer_id = c.id WHERE c.id = ?");
+            $stmt->bind_param("i", $consumer_id);
+        } else {
+            $stmt = $conn->prepare("SELECT b.id, IFNULL(c.name, 'Unknown') AS consumer_name, IFNULL(r.curr_reading, 0) AS curr_reading, IFNULL(r.prev_reading, 0) AS prev_reading, b.amount, b.due_date, b.status FROM bills b LEFT JOIN readings r ON b.reading_id = r.id LEFT JOIN consumers c ON r.consumer_id = c.id");
+        }
         $stmt->execute();
         $result = $stmt->get_result();
         $bills = [];
@@ -109,6 +117,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $stmt->close();
         exit;
+    }
+}
+
+// receipt API
+if ($_GET['action'] === 'get_bill_by_id' && isset($_GET['id'])) {
+    $id = $_GET['id'];
+
+    $query = "SELECT b.*, c.name AS consumer_name, c.meter_no 
+              FROM bills b
+              JOIN consumers c ON b.consumer_id = c.id
+              WHERE b.id = ?";
+
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    if ($row = $result->fetch_assoc()) {
+        echo json_encode([
+            'status' => 'success',
+            'data' => $row
+        ]);
+    } else {
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'Bill not found'
+        ]);
     }
 }
 ?>

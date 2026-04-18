@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Receipt</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<div class="container" id="receiptContainer">
+    <h2>Electric Bill Receipt</h2>
+    <hr>
+
+    <p><strong>Customer:</strong> <span id="name"></span></p>
+    <p><strong>Meter No:</strong> <span id="meter"></span></p>
+    <p><strong>Due Date:</strong> <span id="due"></span></p>
+    <p><strong>Reading:</strong> <span id="reading"></span></p>
+    <p><strong>Amount Paid:</strong> ₱<span id="amount"></span></p>
+    <p><strong>Status:</strong> <span style="color:green;">PAID</span></p>
+
+    <br>
+    <button onclick="window.print()" class="btn">Print</button>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const billId = urlParams.get('bill_id');
+
+    $.ajax({
+        url: '../../backend/php/billing.php?action=get_bill_by_id&id=' + billId,
+        type: 'GET',
+        dataType: 'json',
+        success: function(res) {
+            if (res.status === 'success') {
+                const bill = res.data;
+
+                $('#name').text(bill.consumer_name);
+                $('#meter').text(bill.meter_no);
+                $('#due').text(bill.due_date);
+                $('#reading').text(bill.prev_reading + ' / ' + bill.curr_reading);
+                $('#amount').text(parseFloat(bill.amount).toFixed(2));
+            }
+        }
+    });
+</script>
+
+</body>
+</html>
