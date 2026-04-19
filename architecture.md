@@ -7,7 +7,7 @@ A comprehensive web application designed to manage electricity consumers, meter 
 
 ### 1. User Authentication & Authorization
 - Admin Login/Logout
-- Role-based access (Admin, Staff)
+- Role-based access (Admin, Customer)
 
 ### 2. Consumer Management
 - Add, Edit, Delete, and View Consumers
