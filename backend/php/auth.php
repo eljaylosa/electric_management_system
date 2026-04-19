@@ -75,7 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 // Logout API
 if (isset($_GET['action']) && $_GET['action'] === 'logout') {
     session_destroy();
-    header("Location: ../../frontend/html/login.html");
+    header("Location: ../../frontend/html/index.html");
     exit;
 }
 
