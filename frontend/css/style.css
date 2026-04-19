@@ -35,7 +35,7 @@ h1, h2, h3 {
 nav {
     background-color: var(--primary-color);
     color: var(--white);
-    padding: 10px 0;
+    padding: 20px 0;
     position: sticky;
     top: 0;
     z-index: 1000;
@@ -52,7 +52,10 @@ nav {
 
 .nav-logo {
     font-weight: bold;
-    font-size: 1.2rem;
+    font-size: 1.75rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .nav-toggle {
@@ -79,7 +82,7 @@ nav ul li a {
     color: var(--white);
     text-decoration: none;
     font-weight: bold;
-    font-size: 0.9rem;
+    font-size: 1.2rem;
 }
 
 nav ul li a:hover {
@@ -189,6 +192,23 @@ table tr:nth-child(even) {
 
 .card h3 { margin-top: 0; font-size: 1.1rem; }
 .card .value { font-size: 1.8rem; font-weight: bold; color: var(--primary-color); }
+
+/* Search CSS */
+.search-container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+.search-container input {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 1rem;
+}
 
 /* Mobile Responsiveness */
 @media (max-width: 768px) {

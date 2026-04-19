@@ -10,7 +10,10 @@
 <body>
     <nav>
         <div class="nav-container">
-            <div class="nav-logo">Electric MS</div>
+            <div class="nav-logo">
+                <img src="../../images/logo/electricity_logo.png" alt="" height="100px" width="100px">
+                <p>Electric MS</p>
+            </div>
             <button class="nav-toggle" id="navToggle">&#9776;</button>
             <ul id="navMenu">
                 <li><a href="dashboard.html">Dashboard</a></li>
@@ -25,6 +28,11 @@
     <div class="container">
         <h1>Payment Collection</h1>
         <button class="btn btn-success" id="recordPaymentBtn">Record New Payment</button>
+
+        <div class="search-container">
+            <label for="searchInput" style="display: block;">Search Payments:</label>
+            <input type="text" name="" id="searchInput">
+        </div>
 
         <div id="paymentFormContainer" style="display: none; margin-top: 20px;">
             <h2>Record New Payment</h2>
@@ -65,6 +73,14 @@
             // Mobile Navigation Toggle
             $('#navToggle').on('click', function() {
                 $('#navMenu').toggleClass('active');
+            });
+
+            // Search functionality
+            $('#searchInput').on('input', function() {
+                const query = $(this).val().toLowerCase();
+                $('#paymentsTable tbody tr').filter(function() {
+                    $(this).toggle($(this).text().toLowerCase().indexOf(query) > -1);
+                });
             });
 
             // Load all payments

@@ -10,7 +10,10 @@
 <body>
     <nav>
         <div class="nav-container">
-            <div class="nav-logo">Electric MS</div>
+            <div class="nav-logo">
+                <img src="../../images/logo/electricity_logo.png" alt="" height="100px" width="100px">
+                <p>Electric MS</p>
+            </div>
             <button class="nav-toggle" id="navToggle">&#9776;</button>
             <ul id="navMenu">
                 <li><a href="dashboard.html">Dashboard</a></li>
@@ -25,6 +28,12 @@
     <div class="container">
         <h1>Consumer Management</h1>
         <button class="btn btn-success" id="addConsumerBtn">Add New Consumer</button>
+
+        <div class="search-container">
+            <label for="searchInput" style="display: block;">Search Consumers:</label>
+            <input type="text" name="" id="searchInput">
+        </div>
+
 
         <div id="consumerFormContainer" style="display: none; margin-top: 20px;">
             <h2 id="formTitle">Add New Consumer</h2>
@@ -73,6 +82,24 @@
             // Mobile Navigation Toggle
             $('#navToggle').on('click', function() {
                 $('#navMenu').toggleClass('active');
+            });
+
+            // Search function
+            $('#searchInput').on('input', function() {
+                const searchTerm = $(this).val().toLowerCase();
+                $('#consumersTable tbody tr').each(function() {
+                    const name = $(this).find('td[data-label="Name"]').text().toLowerCase();
+                    const address = $(this).find('td[data-label="Address"]').text().toLowerCase();
+                    const contact = $(this).find('td[data-label="Contact"]').text().toLowerCase();
+                    const meterNo = $(this).find('td[data-label="Meter No"]').text().toLowerCase();
+                    const category = $(this).find('td[data-label="Category"]').text().toLowerCase();
+
+                    if (name.includes(searchTerm) || address.includes(searchTerm) || contact.includes(searchTerm) || meterNo.includes(searchTerm) || category.includes(searchTerm)) {
+                        $(this).show();
+                    } else {
+                        $(this).hide();
+                    }
+                });
             });
 
             // Load all consumers

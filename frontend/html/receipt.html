@@ -28,7 +28,7 @@
     const billId = urlParams.get('bill_id');
 
     $.ajax({
-        url: '../../backend/php/billing.php?action=get_bill_by_id&id=' + billId,
+        url: '../../backend/php/billing.php?action=get_bill_by_id_receipt&id=' + billId,
         type: 'GET',
         dataType: 'json',
         success: function(res) {

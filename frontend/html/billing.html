@@ -10,7 +10,10 @@
 <body>
     <nav>
         <div class="nav-container">
-            <div class="nav-logo">Electric MS</div>
+            <div class="nav-logo">
+                <img src="../../images/logo/electricity_logo.png" alt="" height="100px" width="100px">
+                <p>Electric MS</p>
+            </div>
             <button class="nav-toggle" id="navToggle">&#9776;</button>
             <ul id="navMenu">
                 <li><a href="dashboard.html">Dashboard</a></li>
@@ -25,6 +28,11 @@
     <div class="container">
         <h1>Billing Management</h1>
         <button class="btn btn-success" id="addReadingBtn">Add New Reading</button>
+
+        <div class="search-container">
+            <label for="searchInput" style="display: block;">Search Billing:</label>
+            <input type="text" name="" id="searchInput">
+        </div>
 
         <div id="readingFormContainer" style="display: none; margin-top: 20px;">
             <h2>Add New Reading</h2>
@@ -72,6 +80,15 @@
             // Mobile Navigation Toggle
             $('#navToggle').on('click', function() {
                 $('#navMenu').toggleClass('active');
+            });
+
+            // Search functionality
+            $('#searchInput').on('input', function() {
+                const searchTerm = $(this).val().toLowerCase();
+                $('#billsTable tbody tr').each(function() {
+                    const rowText = $(this).text().toLowerCase();
+                    $(this).toggle(rowText.indexOf(searchTerm) > -1);
+                });
             });
 
             // Load all bills

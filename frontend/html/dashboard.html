@@ -10,7 +10,11 @@
 <body>
     <nav>
         <div class="nav-container">
-            <div class="nav-logo">Electric MS</div>
+            <div class="nav-logo">
+                <img src="../../images/logo/electricity_logo.png" alt="" height="100px" width="100px">
+                <p>Electric MS</p>
+            </div>
+            
             <button class="nav-toggle" id="navToggle">&#9776;</button>
             <ul id="navMenu">
                 <li><a href="dashboard.html">Dashboard</a></li>
@@ -23,7 +27,7 @@
     </nav>
 
     <div class="container">
-        <h1>Dashboard</h1>
+        <h1>Dashboard, <span style="opacity: .75;">Admin</span></h1>
         <div class="dashboard-cards">
             <div class="card">
                 <h3>Total Consumers</h3>
@@ -104,14 +108,15 @@
                             const activitiesTableBody = $('#recentActivitiesTable tbody');
                             activitiesTableBody.empty();
                             response.data.forEach(bill => {
-                                const activityRow = `
+                                const activityRow = 
+                                `
                                     <tr>
                                         <td>Bill for ${bill.consumer_name} - ₱${bill.amount}</td>
                                         <td>${new Date(bill.due_date).toLocaleDateString()}</td>
                                         <td>${bill.status.charAt(0).toUpperCase() + bill.status.slice(1)}</td>
                                     </tr>
                                 `;
-                                activitiesTableBody.append(activityRow);
+                            activitiesTableBody.append(activityRow);
                             });
                         }
                     }
