@@ -10,7 +10,12 @@
 <body>
     <nav>
         <div class="nav-container">
-            <div class="nav-logo">Electric MS</div>
+            <div class="nav-logo">
+                <div class="logo-image">
+                    <img src="../../images/logo/electricity_logo2.png" alt="Logo" height="100px" width="100px">
+                </div>
+                Electric <span style="font-style: italic;">MS</span>
+            </div>
             <button class="nav-toggle" id="navToggle">&#9776;</button>
             <ul id="navMenu">
                 <li><a href="dashboard.html">Dashboard</a></li>
@@ -24,7 +29,7 @@
     </nav>
 
     <div class="container">
-        <h1>Dashboard</h1>
+        <h1>Dashboard, <span style="opacity: 0.75;">Admin</span></h1>
         <div class="dashboard-cards">
             <div class="card">
                 <h3>Total Consumers</h3>
@@ -96,23 +101,25 @@
                 });
 
                 // load recent activities (for simplicity, we will just show recent bills)
+                // load also when a user pay bills on their customer dashboard, so we can show that activity here in real time
                 $.ajax({
-                    url: '../../backend/php/billing.php?action=get_recent_bills',
-                    type: 'GET',
+                    url: '../../backend/php/billing.php?action=get_recent_activities',
+                    type: 'POST',
+                    data: {action: 'get_recent_activities'},
                     dataType: 'json',
                     success: function(response) {
                         if (response.status === 'success') {
-                            let activitiesHtml = '';
-                            response.data.forEach(bill => {
-                                activitiesHtml += `
+                            let rows = '';
+                            response.data.forEach(activity => {
+                                rows += `
                                     <tr>
-                                        <td>Bill for ${bill.consumer_name} - ₱${bill.amount}</td>
-                                        <td>${bill.due_date}</td>
-                                        <td>${bill.status}</td>
+                                        <td>${activity.description}</td>
+                                        <td>${activity.date}</td>
+                                        <td style="color: ${activity.status === 'success' ? '#10b981' : '#ef4444'}; font-weight: bold;">${activity.status.toUpperCase()}</td>
                                     </tr>
                                 `;
                             });
-                            $('#recentActivitiesTable tbody').html(activitiesHtml);
+                            $('#recentActivitiesTable tbody').html(rows);
                         }
                     }
                 });

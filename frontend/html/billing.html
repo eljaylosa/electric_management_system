@@ -10,7 +10,12 @@
 <body>
     <nav>
         <div class="nav-container">
-            <div class="nav-logo">Electric MS</div>
+            <div class="nav-logo">
+                <div class="logo-image">
+                    <img src="../../images/logo/electricity_logo2.png" alt="Logo" height="100px" width="100px">
+                </div>
+                Electric <span style="font-style: italic;">MS</span>
+            </div>
             <button class="nav-toggle" id="navToggle">&#9776;</button>
             <ul id="navMenu">
                 <li><a href="dashboard.html">Dashboard</a></li>
@@ -193,6 +198,16 @@
             // Submit reading form
             $('#readingForm').on('submit', function(e) {
                 e.preventDefault();
+
+                // preventnegative readings
+                let prev = parseFloat($('#prev_reading').val());
+                let curr = parseFloat($('#curr_reading').val());
+
+                if (curr < prev) {
+                    alert("Current reading cannot be lower than previous reading.");
+                    return;
+                }
+
                 $.ajax({
                     url: '../../backend/php/billing.php',
                     type: 'POST',
@@ -209,6 +224,18 @@
                     }
                 });
             });
+
+            $('#curr_reading').on('input', function() {
+                let prev = parseFloat($('#prev_reading').val());
+                let curr = parseFloat($(this).val());
+
+                if (curr < prev) {
+                    $(this).css('border', '2px solid red');
+                } else {
+                    $(this).css('border', '');
+                }
+            });
+
         });
     </script>
 </body>

@@ -61,9 +61,13 @@ nav {
 }
 
 .nav-logo {
+    display: flex;
+    flex-direction: row;
     font-weight: 800;
     font-size: 1.5rem;
     letter-spacing: -0.025em;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 .nav-toggle {
@@ -265,6 +269,8 @@ button:disabled {
     box-shadow: 0 0 5px rgba(76, 175, 80, 0.3);
 }
 
+
+
 /* layout spacing */
 .container > div {
     align-items: center;
@@ -319,6 +325,21 @@ button:disabled {
 #paymentStatusFilter:focus {
     border-color: #4CAF50;
     box-shadow: 0 0 5px rgba(76, 175, 80, 0.3);
+}
+
+/* css for table customer pay now*/
+.payNowBtn {
+    background: #2ecc71;
+    color: white;
+}
+
+.payNowBtn:hover {
+    background: #27ae60;
+}
+
+.disabled-btn {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 /* Mobile Responsiveness */

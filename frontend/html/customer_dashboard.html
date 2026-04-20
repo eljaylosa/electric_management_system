@@ -10,7 +10,12 @@
 <body>
     <nav>
         <div class="nav-container">
-            <div class="nav-logo">Electric MS</div>
+            <div class="nav-logo">
+                <div class="logo-image">
+                    <img src="../../images/logo/electricity_logo2.png" alt="Logo" height="100px" width="100px">
+                </div>
+                Electric <span style="font-style: italic;">MS</span>
+            </div>
             <button class="nav-toggle" id="navToggle">&#9776;</button>
             <ul id="navMenu">
                 <li><a href="customer_dashboard.html">My Dashboard</a></li>
@@ -20,7 +25,7 @@
     </nav>
 
     <div class="container">
-        <h1>Welcome, <span id="customerName">Customer</span></h1>
+        <h1>Welcome, <span id="customerName" style="opacity: .75;">Customer</span></h1>
         <div class="dashboard-cards">
             <div class="card">
                 <h3>Total Bills</h3>
@@ -94,12 +99,20 @@
                                             <td data-label="Amount">₱${parseFloat(bill.amount).toFixed(2)}</td>
                                             <td data-label="Status" style="color: ${bill.status === 'paid' ? '#2ecc71' : '#e74c3c'}; font-weight: bold;">${bill.status.toUpperCase()}</td>
                                             <td data-label="Actions">
-                                                <button 
-                                                    class="btn btn-primary viewBillBtn ${bill.status !== 'paid' ? 'disabled-btn' : ''}"
-                                                    data-id="${bill.id}"
-                                                    ${bill.status !== 'paid' ? 'disabled' : ''}>
-                                                    View Receipt
-                                                </button>
+                                                ${bill.status === 'paid' ? `
+                                                    <button class="btn btn-primary viewBillBtn" data-id="${bill.id}">
+                                                        View Receipt
+                                                    </button>
+                                                ` : `
+                                                    <div style="display:flex; gap:5px; flex-wrap:wrap;">
+                                                        <button class="btn btn-success gcashBtn" data-id="${bill.id}">
+                                                            Pay GCash
+                                                        </button>
+                                                        <button class="btn btn-warning mayaBtn" data-id="${bill.id}">
+                                                            Pay Maya
+                                                        </button>
+                                                    </div>
+                                                `}
                                             </td>
                                         </tr>
                                     `;
@@ -115,6 +128,39 @@
                     }
                 });
             }
+
+            $(document).on('click', '.gcashBtn, .mayaBtn', function () {
+                const billId = $(this).data('id');
+                const method = $(this).hasClass('gcashBtn') ? 'gcash' : 'maya';
+
+                window.location.href = `payment_gateway.html?bill_id=${billId}&method=${method}`;
+            });
+
+            // $(document).on('click', '.payNowBtn', function () {
+            //     const billId = $(this).data('id');
+
+            //     if (!confirm("Confirm payment for this bill?")) return;
+
+            //     $.ajax({
+            //         url: '../../backend/php/billing.php',
+            //         type: 'POST',
+            //         data: {
+            //             action: 'record_payment',
+            //             bill_id: billId,
+            //             amount_paid: 0, // backend will compute later (we improve this next)
+            //             payment_date: new Date().toISOString().split('T')[0]
+            //         },
+            //         dataType: 'json',
+            //         success: function (res) {
+            //             if (res.status === 'success') {
+            //                 alert("Payment successful!");
+            //                 loadCustomerData();
+            //             } else {
+            //                 alert(res.message);
+            //             }
+            //         }
+            //     });
+            // });
 
             loadCustomerData();
 

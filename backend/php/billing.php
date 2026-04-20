@@ -192,6 +192,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($result->num_rows === 1) {
 
             $rate = $result->fetch_assoc()['rate_per_kwh'];
+
+            $prev_reading = $_POST['prev_reading'];
+            $curr_reading = $_POST['curr_reading'];
+
+            if ($curr_reading < $prev_reading) {
+                echo json_encode([
+                    'status' => 'error',
+                    'message' => 'Current reading cannot be lower than previous reading'
+                ]);
+                exit;
+            }
+
             $amount = ($curr_reading - $prev_reading) * $rate;
 
             $stmt = $conn->prepare("
@@ -234,9 +246,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action']) && $_POST['action'] === 'record_payment') {
 
         $bill_id = $_POST['bill_id'];
-        $amount_paid = $_POST['amount_paid'];
         $payment_date = $_POST['payment_date'];
 
+        // GET BILL AMOUNT FIRST
+        $stmt = $conn->prepare("SELECT amount FROM bills WHERE id = ?");
+        $stmt->bind_param("i", $bill_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        if ($result->num_rows === 0) {
+            echo json_encode(['status' => 'error', 'message' => 'Bill not found']);
+            exit;
+        }
+
+        $row = $result->fetch_assoc();
+        $amount_paid = $row['amount'];
+
+        $stmt->close();
+
+        // INSERT PAYMENT
         $stmt = $conn->prepare("
             INSERT INTO payments (bill_id, amount_paid, payment_date)
             VALUES (?, ?, ?)
@@ -245,9 +273,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($stmt->execute()) {
 
-            $stmt2 = $conn->prepare("
-                UPDATE bills SET status = 'paid' WHERE id = ?
-            ");
+            // UPDATE BILL STATUS
+            $stmt2 = $conn->prepare("UPDATE bills SET status = 'paid' WHERE id = ?");
             $stmt2->bind_param("i", $bill_id);
 
             if ($stmt2->execute()) {
@@ -265,5 +292,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->close();
         exit;
     }
+
+    // get recent activities
+    if (isset($_POST['action']) && $_POST['action'] === 'get_recent_activities') {
+
+        $stmt = $conn->prepare("
+            SELECT 
+                'payment' AS type,
+                c.name AS consumer_name,
+                b.amount,
+                p.payment_date AS date,
+                'success' AS status
+            FROM payments p
+            JOIN bills b ON p.bill_id = b.id
+            JOIN readings r ON b.reading_id = r.id
+            JOIN consumers c ON r.consumer_id = c.id
+    
+            UNION ALL
+    
+            SELECT 
+                'bill' AS type,
+                c.name AS consumer_name,
+                b.amount,
+                b.due_date AS date,
+                b.status AS status
+            FROM bills b
+            JOIN readings r ON b.reading_id = r.id
+            JOIN consumers c ON r.consumer_id = c.id
+    
+            ORDER BY date DESC
+            LIMIT 5
+        ");
+    
+        $stmt->execute();
+        $result = $stmt->get_result();
+    
+        $activities = [];
+    
+        while ($row = $result->fetch_assoc()) {
+    
+            $activities[] = [
+                "description" => ucfirst($row['type']) . " - " . $row['consumer_name'] . " (₱" . $row['amount'] . ")",
+                "date" => $row['date'],
+                "status" => $row['status']
+            ];
+        }
+    
+        echo json_encode([
+            'status' => 'success',
+            'data' => $activities
+        ]);
+    
+        $stmt->close();
+        exit;
+    }
+        
 }
 ?>
