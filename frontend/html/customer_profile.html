@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Profile</title>
+
+<link rel="stylesheet" href="../css/style.css">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<style>
+/* body{
+    background:#f5f7fb;
+    font-family: Arial, sans-serif;
+} */
+
+/* NAV */
+/* .nav-container{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:10px 20px;
+} */
+
+/* PROFILE WRAPPER */
+.profile-wrapper{
+    display:flex;
+    justify-content:center;
+    margin-top:40px;
+}
+
+/* CARD */
+.profile-card{
+    width:700px;
+    background:white;
+    border-radius:15px;
+    padding:30px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.08);
+}
+
+/* HEADER */
+.profile-header{
+    text-align:center;
+    margin-bottom:25px;
+}
+
+.profile-img{
+    width:100px;
+    height:100px;
+    border-radius:50%;
+    object-fit:cover;
+    border:4px solid #4f46e5;
+}
+
+.profile-header h2{
+    margin-top:10px;
+}
+
+/* FORM */
+.form-row{
+    display:flex;
+    gap:15px;
+}
+
+.form-group{
+    margin-bottom:15px;
+    flex:1;
+}
+
+label{
+    font-weight:600;
+    font-size:14px;
+}
+
+input{
+    width:100%;
+    padding:10px;
+    margin: 5px;
+    border-radius:8px;
+    border:1px solid #ccc;
+}
+
+/* BUTTON */
+.btn{
+    width:100%;
+    padding:12px;
+    border:none;
+    border-radius:8px;
+    background:#4f46e5;
+    color:white;
+    font-weight:bold;
+    cursor:pointer;
+    margin-top:10px;
+}
+
+.btn:hover{
+    background:#3730a3;
+}
+
+/* SECTIONS */
+.section{
+    margin-top:25px;
+    padding-top:15px;
+    border-top:1px solid #eee;
+}
+
+.section h3{
+    margin-bottom:10px;
+}
+
+/* SUMMARY BOX */
+.summary-box{
+    display:flex;
+    justify-content:space-between;
+    background:#eef2ff;
+    padding:15px;
+    border-radius:10px;
+}
+
+.summary-box div{
+    text-align:center;
+}
+
+.summary-box h4{
+    margin:0;
+}
+</style>
+</head>
+
+<body>
+
+<!-- NAV -->
+<nav>
+    <div class="nav-container">
+        <div class="nav-logo">
+          <div class="logo-image">
+              <img src="../../images/logo/electricity_logo2.png" alt="Logo" height="100px" width="100px">
+          </div>
+          Electric <span style="font-style: italic;">MS</span>
+      </div>
+      <button class="nav-toggle" id="navToggle">&#9776;</button>
+      <ul id="navMenu">
+          <li><a href="customer_dashboard.html">My Dashboard</a></li>
+          <li><a href="report_outage.html">Report Outage</a></li>
+          <li><a href="submit_complaint.html">Submit Complaint</a></li>
+          <li><a href="customer_profile.html">Profile</a></li>
+          <li><a href="../../backend/php/auth.php?action=logout">Logout</a></li>
+      </ul>
+    </div>
+</nav>
+
+<!-- PROFILE -->
+<div class="profile-wrapper">
+<div class="profile-card">
+
+    <!-- HEADER -->
+    <div class="profile-header">
+        <img src="../../images/default.png" id="profileImg" class="profile-img">
+        <input type="file" id="uploadInput">
+        <button class="btn" id="uploadBtn">Upload Photo</button>
+
+        <h2 id="displayName"></h2>
+        <p style="color:gray;">Customer Account</p>
+    </div>
+
+    <!-- PROFILE FORM -->
+    <form id="profileForm">
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" id="name">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Address</label>
+            <input type="text" id="address">
+        </div>
+
+        <div class="form-group">
+            <label>Meter Number</label>
+            <input type="text" id="meter" disabled>
+        </div>
+
+        <button type="submit" class="btn">Save Changes</button>
+    </form>
+
+    <!-- PASSWORD -->
+    <div class="section">
+        <h3>Change Password</h3>
+
+        <input type="password" id="oldPass" placeholder="Old Password">
+        <input type="password" id="newPass" placeholder="New Password">
+
+        <button class="btn" id="changePassBtn">Update Password</button>
+    </div>
+
+    <!-- SUMMARY -->
+    <div class="section">
+        <h3>Billing Summary</h3>
+
+        <div class="summary-box">
+            <div>
+                <h4 id="totalBills">0</h4>
+                <small>Total Bills</small>
+            </div>
+
+            <div>
+                <h4 id="paidAmount">₱0</h4>
+                <small>Paid</small>
+            </div>
+
+            <div>
+                <h4 id="unpaidAmount">₱0</h4>
+                <small>Unpaid</small>
+            </div>
+        </div>
+    </div>
+
+</div>
+</div>
+
+<script>
+    $(document).ready(function(){
+
+    /* ================= LOAD PROFILE ================= */
+    function loadProfile(){
+        $.ajax({
+            url: '../../backend/php/profile.php?action=get_profile',
+            type: 'GET',
+            dataType: 'json',
+            success: function(res){
+
+                if(res.status === "success"){
+                    let u = res.data;
+
+                    $('#name').val(u.name || '');
+                    $('#address').val(u.address || '');
+                    $('#meter').val(u.meter_no || '');
+
+                    $('#displayName').text(u.name || '');
+
+                    if(u.profile_pic){
+                        $('#profileImg').attr('src', '../../uploads/' + u.profile_pic);
+                    }
+                } else {
+                    alert(res.message);
+                }
+            },
+            error: function(xhr){
+                console.log(xhr.responseText);
+                alert("Failed to load profile");
+            }
+        });
+    }
+
+    /* ================= UPDATE PROFILE ================= */
+    $('#profileForm').submit(function(e){
+        e.preventDefault();
+
+        $.post('../../backend/php/profile.php', {
+            action: 'update_profile',
+            name: $('#name').val(),
+            address: $('#address').val()
+        }, function(res){
+
+            if(res.status === "success"){
+                alert(res.message);
+                loadProfile();
+            } else {
+                alert(res.message);
+            }
+
+        }, 'json');
+    });
+  
+    // change password
+    // Change Password
+    $('#changePassBtn').click(function () {
+
+      let oldPass = $('#oldPass').val();
+      let newPass = $('#newPass').val();
+
+      if (!oldPass || !newPass) {
+          alert("Fill both fields");
+          return;
+      }
+
+      $.post('../../backend/php/profile.php', {
+          action: 'change_password',
+          old: oldPass,
+          new: newPass
+      }, function (res) {
+
+          if (res.status === "success") {
+              alert(res.message);
+              $('#oldPass, #newPass').val('');
+          } else {
+              alert(res.message);
+          }
+
+      }, 'json');
+    });
+
+    
+
+    /* ================= UPLOAD PIC ================= */
+    $('#uploadBtn').click(function(){
+
+        let file = $('#uploadInput')[0].files[0];
+
+        if(!file){
+            alert("Select file first");
+            return;
+        }
+
+        let fd = new FormData();
+        fd.append('image', file);
+        fd.append('action', 'upload_pic');
+
+        $.ajax({
+            url:'../../backend/php/profile.php',
+            type:'POST',
+            data:fd,
+            processData:false,
+            contentType:false,
+            dataType:'json',
+            success:function(res){
+
+                alert(res.message);
+
+                if(res.status === "success"){
+                    loadProfile();
+                }
+            }
+        });
+    });
+
+    /* ================= SUMMARY ================= */
+    function loadSummary(){
+        $.get('../../backend/php/profile.php?action=summary', function(res){
+
+            if(res.status === "success"){
+                $('#totalBills').text(res.data.total_bills || 0);
+                $('#paidAmount').text("₱" + (parseFloat(res.data.paid || 0)).toFixed(2));
+                $('#unpaidAmount').text("₱" + (parseFloat(res.data.unpaid || 0)).toFixed(2));
+            }
+
+        }, 'json');
+    }
+
+    /* INIT */
+    loadProfile();
+    loadSummary();
+
+    });
+</script>
+
+</body>
+</html>

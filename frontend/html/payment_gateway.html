@@ -22,59 +22,59 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <script>
-$(document).ready(function () {
+    $(document).ready(function () {
 
-  const params = new URLSearchParams(window.location.search);
-  const billId = params.get("bill_id");
-  const method = params.get("method");
+    const params = new URLSearchParams(window.location.search);
+    const billId = params.get("bill_id");
+    const method = params.get("method");
 
-  $('#billId').text(billId);
-  $('#method').text(method ? method.toUpperCase() : "UNKNOWN");
+    $('#billId').text(billId);
+    $('#method').text(method ? method.toUpperCase() : "UNKNOWN");
 
-  $('#completePayment').on('click', function () {
+    $('#completePayment').on('click', function () {
 
-      const btn = $(this);
+        const btn = $(this);
 
-      // prevent double click
-      if (btn.prop("disabled")) return;
+        // prevent double click
+        if (btn.prop("disabled")) return;
 
-      btn.text("Processing...").prop("disabled", true);
+        btn.text("Processing...").prop("disabled", true);
 
-      $.ajax({
-          url: '../../backend/php/billing.php',
-          type: 'POST',
-          data: {
-              action: 'record_payment',
-              bill_id: billId,
-              payment_date: new Date().toISOString().split('T')[0]
-          },
-          dataType: 'json',
-          success: function (res) {
+        $.ajax({
+            url: '../../backend/php/billing.php',
+            type: 'POST',
+            data: {
+                action: 'record_payment',
+                bill_id: billId,
+                payment_date: new Date().toISOString().split('T')[0]
+            },
+            dataType: 'json',
+            success: function (res) {
 
-              if (res.status === 'success') {
+                if (res.status === 'success') {
 
-                  btn.text("Success!");
+                    btn.text("Success!");
 
-                  // optional: store success flag
-                  localStorage.setItem("payment_success", "1");
+                    // optional: store success flag
+                    localStorage.setItem("payment_success", "1");
 
-                  setTimeout(() => {
-                      window.location.href = "customer_dashboard.html";
-                  }, 1000);
+                    setTimeout(() => {
+                        window.location.href = "customer_dashboard.html";
+                    }, 1000);
 
-              } else {
-                  alert(res.message);
-                  btn.text("Complete Payment").prop("disabled", false);
-              }
-          },
-          error: function () {
-              alert("Server error. Try again.");
-              btn.text("Complete Payment").prop("disabled", false);
-          }
-      });
-  });
+                } else {
+                    alert(res.message);
+                    btn.text("Complete Payment").prop("disabled", false);
+                }
+            },
+            error: function () {
+                alert("Server error. Try again.");
+                btn.text("Complete Payment").prop("disabled", false);
+            }
+        });
+    });
 
-});
+    });
 </script>
 
 </body>
