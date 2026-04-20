@@ -19,6 +19,7 @@
             <button class="nav-toggle" id="navToggle">&#9776;</button>
             <ul id="navMenu">
                 <li><a href="dashboard.html">Dashboard</a></li>
+                <li><a href="rates.html">Rates</a></li>
                 <li><a href="consumers.html">Consumers</a></li>
                 <li><a href="billing.html">Billing</a></li>
                 <li><a href="payments.html">Payments</a></li>
@@ -71,6 +72,7 @@
                         <th>Consumer</th>
                         <th>Prev Reading</th>
                         <th>Curr Reading</th>
+                        <th>Kilowatt Hour</th>
                         <th>Amount</th>
                         <th>Due Date</th>
                         <th>Status</th>
@@ -119,19 +121,32 @@
                     dataType: 'json',
                     success: function(response) {
                         if (response.status === 'success') {
+
                             let rows = '';
+
                             if (response.data.length === 0) {
-                                rows = '<tr><td colspan="7" style="text-align:center;">No bills found.</td></tr>';
+                                rows = '<tr><td colspan="8" style="text-align:center;">No bills found.</td></tr>';
                             } else {
+
                                 response.data.forEach(bill => {
+
+                                    // ✅ compute kWh
+                                    let kwh = parseFloat(bill.curr_reading) - parseFloat(bill.prev_reading);
+                                    if (isNaN(kwh)) kwh = 0;
+
                                     rows += `
                                         <tr>
                                             <td data-label="Consumer">${bill.consumer_name}</td>
                                             <td data-label="Prev Reading">${bill.prev_reading}</td>
                                             <td data-label="Curr Reading">${bill.curr_reading}</td>
+
+                                            <!-- NEW COLUMN -->
+                                            <td data-label="kWh">${kwh.toFixed(2)} kWh</td>
+
                                             <td data-label="Amount">₱${parseFloat(bill.amount).toFixed(2)}</td>
                                             <td data-label="Due Date">${bill.due_date}</td>
                                             <td data-label="Status">${bill.status}</td>
+
                                             <td data-label="Actions">
                                                 <button 
                                                     class="btn btn-primary viewBillBtn"
@@ -141,17 +156,21 @@
                                                 </button>
                                             </td>
                                         </tr>
-                                        `;
+                                    `;
                                 });
                             }
+
                             $('#billsTable tbody').html(rows);
+
                         } else {
                             alert('Error: ' + response.message);
                         }
                     },
                     error: function(xhr, status, error) {
                         console.error('AJAX Error: ' + status + ' - ' + error);
-                        $('#billsTable tbody').html('<tr><td colspan="7" style="text-align:center; color:red;">Failed to load data. Check console for details.</td></tr>');
+                        $('#billsTable tbody').html(
+                            '<tr><td colspan="8" style="text-align:center; color:red;">Failed to load data.</td></tr>'
+                        );
                     }
                 });
             }
@@ -199,7 +218,7 @@
             $('#readingForm').on('submit', function(e) {
                 e.preventDefault();
 
-                // preventnegative readings
+                // prevent negative readings
                 let prev = parseFloat($('#prev_reading').val());
                 let curr = parseFloat($('#curr_reading').val());
 

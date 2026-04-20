@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manage Tariffs</title>
+
+<link rel="stylesheet" href="../css/style.css">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<style>
+.container {
+    padding: 20px;
+}
+
+h1 {
+    margin-bottom: 20px;
+}
+
+/* TABLE */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+}
+
+th, td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+th {
+    background: #4f46e5;
+    color: white;
+}
+
+/* BUTTON */
+.btn {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.btn-edit {
+    background: #f59e0b;
+    color: white;
+}
+
+.btn-edit:hover {
+    background: #d97706;
+}
+
+/* ADD BOX */
+.add-box {
+    margin-bottom: 15px;
+}
+
+.add-box input {
+    padding: 8px;
+    margin-right: 5px;
+}
+
+.btn-add {
+    background: #22c55e;
+    color: white;
+}
+</style>
+</head>
+
+<body>
+
+<nav>
+    <div class="nav-container">
+      <div class="nav-logo">
+        <div class="logo-image">
+            <img src="../../images/logo/electricity_logo2.png" alt="Logo" height="100px" width="100px">
+            </div>
+            Electric <span style="font-style: italic;">MS</span>
+        </div>
+        <button class="nav-toggle" id="navToggle">&#9776;</button>
+            <ul id="navMenu">
+                <li><a href="dashboard.html">Dashboard</a></li>
+                <li><a href="rates.html">Rates</a></li>
+                <li><a href="consumers.html">Consumers</a></li>
+                <li><a href="billing.html">Billing</a></li>
+                <li><a href="payments.html">Payments</a></li>
+                <li><a href="reports.html">Reports</a></li>
+                <li><a href="../../backend/php/auth.php?action=logout">Logout</a></li>
+            </ul>
+    </div>
+</nav>
+
+<div class="container">
+
+    <h1>Manage Tariffs / Rates</h1>
+
+    <!-- ADD CATEGORY -->
+    <div class="add-box">
+        <input type="text" id="newCategory" placeholder="Category Name">
+        <input type="number" id="newRate" placeholder="Rate per kWh" step="0.0001">
+        <button class="btn btn-add" id="addRateBtn">Add</button>
+    </div>
+
+    <!-- TABLE -->
+    <table>
+        <thead>
+            <tr>
+                <th>Category</th>
+                <th>Rate per kWh</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+
+        <tbody id="ratesTable">
+            <!-- DATA HERE -->
+        </tbody>
+    </table>
+
+</div>
+
+<script>
+$(document).ready(function(){
+
+    /* ================= LOAD RATES ================= */
+    function loadRates() {
+        $.get('../../backend/php/rates.php?action=get_all', function(res) {
+
+            let rows = '';
+
+            res.data.forEach(rate => {
+                rows += `
+                    <tr>
+                        <td>${rate.name}</td>
+                        <td>₱${parseFloat(rate.rate_per_kwh).toFixed(4)}</td>
+                        <td>
+                            <button class="btn btn-edit editBtn"
+                                data-id="${rate.id}"
+                                data-rate="${rate.rate_per_kwh}">
+                                Edit
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            $('#ratesTable').html(rows);
+
+        }, 'json');
+    }
+
+    loadRates();
+
+    /* ================= EDIT RATE ================= */
+    $(document).on('click', '.editBtn', function(){
+
+        let id = $(this).data('id');
+        let current = $(this).data('rate');
+
+        let newRate = prompt("Enter new rate per kWh:", current);
+
+        if(!newRate) return;
+
+        $.post('../../backend/php/rates.php', {
+            action: 'update_rate',
+            id: id,
+            rate: newRate
+        }, function(res){
+
+            alert(res.message);
+            loadRates();
+
+        }, 'json');
+
+    });
+
+    /* ================= ADD CATEGORY ================= */
+    $('#addRateBtn').click(function(){
+
+        let name = $('#newCategory').val();
+        let rate = $('#newRate').val();
+
+        if(!name || !rate){
+            alert("Fill all fields");
+            return;
+        }
+
+        $.post('../../backend/php/rates.php', {
+            action: 'add_category',
+            name: name,
+            rate: rate
+        }, function(res){
+
+            alert(res.message);
+
+            $('#newCategory').val('');
+            $('#newRate').val('');
+
+            loadRates();
+
+        }, 'json');
+
+    });
+
+});
+</script>
+
+</body>
+</html>

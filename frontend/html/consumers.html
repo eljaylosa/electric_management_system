@@ -19,6 +19,7 @@
             <button class="nav-toggle" id="navToggle">&#9776;</button>
             <ul id="navMenu">
                 <li><a href="dashboard.html">Dashboard</a></li>
+                <li><a href="rates.html">Rates</a></li>
                 <li><a href="consumers.html">Consumers</a></li>
                 <li><a href="billing.html">Billing</a></li>
                 <li><a href="payments.html">Payments</a></li>
@@ -36,9 +37,7 @@
             <input type="text" id="searchInput" placeholder="Search name / meter / address..." style="flex:1; padding:10px;">
         
             <select id="categoryFilter">
-                <option value="">All Categories</option>
-                <option value="Residential">Residential</option>
-                <option value="Commercial">Commercial</option>
+                <option value="">Loading...</option>
             </select>
         </div>
 
@@ -57,8 +56,7 @@
                 <input type="text" id="meter_no" name="meter_no" required>
                 <label for="category_id">Category</label>
                 <select id="category_id" name="category_id" required>
-                    <option value="1">Residential</option>
-                    <option value="2">Commercial</option>
+                    <option value="">Loading categories...</option>
                 </select>
                 <button type="submit" id="submitBtn">Save Consumer</button>
                 <button type="button" class="btn btn-danger" id="cancelBtn" style="width: 100%; margin-top: 10px;">Cancel</button>
@@ -111,6 +109,50 @@
             $('#searchInput').on('keyup', filterTable);
             $('#categoryFilter').on('change', filterTable);
 
+            function loadCategories() {
+                $.ajax({
+                    url: '../../backend/php/categories.php?action=get_all',
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function(res) {
+
+                        if (res.status === 'success') {
+
+                            let formOptions = '<option value="">Select Category</option>';
+                            let filterOptions = '<option value="">All Categories</option>';
+
+                            res.data.forEach(cat => {
+
+                                // form dropdown (uses ID)
+                                formOptions += `
+                                    <option value="${cat.id}">
+                                        ${cat.name}
+                                    </option>
+                                `;
+
+                                // filter dropdown (uses NAME for matching text)
+                                filterOptions += `
+                                    <option value="${cat.name}">
+                                        ${cat.name}
+                                    </option>
+                                `;
+                            });
+
+                            $('#category_id').html(formOptions);
+                            $('#categoryFilter').html(filterOptions);
+
+                        } else {
+                            $('#category_id').html('<option>No categories</option>');
+                            $('#categoryFilter').html('<option>No categories</option>');
+                        }
+                    },
+                    error: function() {
+                        $('#category_id').html('<option>Error</option>');
+                        $('#categoryFilter').html('<option>Error</option>');
+                    }
+                });
+            }
+
             // Load all consumers
             function loadConsumers() {
                 $.ajax({
@@ -155,6 +197,7 @@
             }
 
             loadConsumers();
+            loadCategories();
 
             // Show add form
             $('#addConsumerBtn').on('click', function() {
