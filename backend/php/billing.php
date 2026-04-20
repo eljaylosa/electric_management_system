@@ -134,9 +134,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
         $stmt = $conn->prepare("
             SELECT 
-                p.id,
+                p.*,
                 c.name AS consumer_name,
                 b.amount,
+                b.id AS bill_id,
                 p.amount_paid,
                 p.payment_date
             FROM payments p

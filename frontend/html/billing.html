@@ -41,6 +41,37 @@
                 <option value="paid">Paid</option>
                 <option value="unpaid">Unpaid</option>
             </select>
+
+            <select id="kwhFilter">
+                <option value="">All Usage</option>
+                <option value="high">High Usage</option>
+                <option value="medium">Medium Usage</option>
+                <option value="low">Low Usage</option>
+            </select>
+
+            <select id="monthFilter">
+                <option value="">All Months</option>
+                <option value="01">January</option>
+                <option value="02">February</option>
+                <option value="03">March</option>
+                <option value="04">April</option>
+                <option value="05">May</option>
+                <option value="06">June</option>
+                <option value="07">July</option>
+                <option value="08">August</option>
+                <option value="09">September</option>
+                <option value="10">October</option>
+                <option value="11">November</option>
+                <option value="12">December</option>
+            </select>
+            
+            <input type="number" id="yearFilter" placeholder="Year (e.g. 2026)">
+            
+            <select id="sortDate">
+                <option value="">Sort Date</option>
+                <option value="latest">Latest First</option>
+                <option value="oldest">Oldest First</option>
+            </select>
         </div>
 
         <div id="readingFormContainer" style="display: none; margin-top: 20px;">
@@ -95,25 +126,93 @@
             
             // filter bills
             function filterBills() {
+
+                const kwhFilter = $('#kwhFilter').val();
                 const searchValue = $('#billSearch').val().toLowerCase();
                 const statusValue = $('#statusFilter').val().toLowerCase();
+                const monthValue = $('#monthFilter').val();
+                const yearValue = $('#yearFilter').val();
+                const sortValue = $('#sortDate').val();
 
-                $('#billsTable tbody tr').filter(function () {
-                    const rowText = $(this).text().toLowerCase();
-                    const rowStatus = $(this).find('td:nth-child(6)').text().toLowerCase();
+                let rows = $('#billsTable tbody tr').get();
 
-                    const matchesSearch = rowText.indexOf(searchValue) > -1;
-                    const matchesStatus = statusValue === "" || rowStatus === statusValue;
+                rows.forEach(row => {
 
-                    $(this).toggle(matchesSearch && matchesStatus);
+                    const text = $(row).text().toLowerCase();
+                    const status = $(row).find('td:nth-child(7)').text().toLowerCase();
+                    const date = $(row).find('td:nth-child(6)').text(); // due date
+
+                    let d = new Date(date);
+                    let month = ("0" + (d.getMonth() + 1)).slice(-2);
+                    let year = d.getFullYear().toString();
+
+                    let matchSearch = text.includes(searchValue);
+                    let matchStatus = statusValue === "" || status === statusValue;
+                    let matchMonth = monthValue === "" || month === monthValue;
+                    let matchYear = yearValue === "" || year === yearValue;
+
+                    $(row).toggle(matchSearch && matchStatus && matchMonth && matchYear);
                 });
+
+                // kWh filtering
+                if (kwhFilter) {
+                    rows.forEach(row => {
+                        const kwhText = $(row).find('td:nth-child(4)').text();
+                        const kwh = parseFloat(kwhText);
+
+                        let show = false;
+                        if (kwhFilter === "high") show = kwh >= 500;
+                        else if (kwhFilter === "medium") show = kwh >= 200 && kwh < 500;
+                        else if (kwhFilter === "low") show = kwh < 200;
+
+                        $(row).toggle(show);
+                    });
+                }
+
+                // sorting
+                if (sortValue) {
+                    let tbody = $('#billsTable tbody');
+
+                    let sorted = rows.sort((a, b) => {
+
+                        let dateA = new Date($(a).find('td:nth-child(6)').text());
+                        let dateB = new Date($(b).find('td:nth-child(6)').text());
+
+                        if (sortValue === "latest") return dateB - dateA;
+                        if (sortValue === "oldest") return dateA - dateB;
+                    });
+
+                    tbody.append(sorted);
+                }
             }
+            
 
             // events
+            $('#yearFilter').val(new Date().getFullYear());
+            $('#monthFilter, #yearFilter').on('change', filterBills);
             $('#billSearch').on('keyup', filterBills);
+            $('#kwhFilter').on('change', filterBills);
             $('#statusFilter').on('change', filterBills);
 
-            // Load all bills
+            // sort date handler
+            $('#sortDate').on('change', function () {
+                let sortValue = $(this).val();
+
+                let data = $('#billsTable tbody tr').get();
+
+                data.sort((a, b) => {
+
+                    let dateA = new Date($(a).find('td:nth-child(6)').text());
+                    let dateB = new Date($(b).find('td:nth-child(6)').text());
+
+                    if (sortValue === "latest") return dateB - dateA;
+                    if (sortValue === "oldest") return dateA - dateB;
+                    return 0;
+                });
+
+                $('#billsTable tbody').append(data);
+            });
+
             function loadBills() {
                 $.ajax({
                     url: '../../backend/php/billing.php?action=get_all_bills',
@@ -122,46 +221,16 @@
                     success: function(response) {
                         if (response.status === 'success') {
 
-                            let rows = '';
+                            let data = response.data;
 
-                            if (response.data.length === 0) {
-                                rows = '<tr><td colspan="8" style="text-align:center;">No bills found.</td></tr>';
-                            } else {
+                            // default sort = latest added
+                            data.sort((a, b) => {
+                                let dateA = new Date(a.created_at || a.reading_date || a.due_date);
+                                let dateB = new Date(b.created_at || b.reading_date || b.due_date);
+                                return dateB - dateA;
+                            });
 
-                                response.data.forEach(bill => {
-
-                                    // ✅ compute kWh
-                                    let kwh = parseFloat(bill.curr_reading) - parseFloat(bill.prev_reading);
-                                    if (isNaN(kwh)) kwh = 0;
-
-                                    rows += `
-                                        <tr>
-                                            <td data-label="Consumer">${bill.consumer_name}</td>
-                                            <td data-label="Prev Reading">${bill.prev_reading}</td>
-                                            <td data-label="Curr Reading">${bill.curr_reading}</td>
-
-                                            <!-- NEW COLUMN -->
-                                            <td data-label="kWh">${kwh.toFixed(2)} kWh</td>
-
-                                            <td data-label="Amount">₱${parseFloat(bill.amount).toFixed(2)}</td>
-                                            <td data-label="Due Date">${bill.due_date}</td>
-                                            <td data-label="Status">${bill.status}</td>
-
-                                            <td data-label="Actions">
-                                                <button 
-                                                    class="btn btn-primary viewBillBtn"
-                                                    data-id="${bill.id}"
-                                                    ${bill.status.toLowerCase() !== 'paid' ? 'disabled' : ''}>
-                                                    View Receipt
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    `;
-                                });
-                            }
-
-                            $('#billsTable tbody').html(rows);
-
+                            renderBills(data);
                         } else {
                             alert('Error: ' + response.message);
                         }
@@ -173,6 +242,48 @@
                         );
                     }
                 });
+            }
+
+            function renderBills(data) {
+
+            let rows = '';
+
+            if (data.length === 0) {
+                rows = '<tr><td colspan="8" style="text-align:center;">No bills found.</td></tr>';
+            } else {
+
+                data.forEach(bill => {
+
+                    let kwh = parseFloat(bill.curr_reading) - parseFloat(bill.prev_reading);
+                    if (isNaN(kwh)) kwh = 0;
+
+                    let kwhClass = '';
+                    if (kwh >= 500) kwhClass = 'style="color:red;font-weight:bold;"';
+                    else if (kwh >= 200) kwhClass = 'style="color:orange;"';
+
+                    rows += `
+                        <tr>
+                            <td>${bill.consumer_name}</td>
+                            <td>${bill.prev_reading}</td>
+                            <td>${bill.curr_reading}</td>
+                            <td ${kwhClass}>${kwh.toFixed(2)} kWh</td>
+                            <td>₱${parseFloat(bill.amount).toFixed(2)}</td>
+                            <td>${bill.due_date}</td>
+                            <td>${bill.status}</td>
+                            <td>
+                                <button 
+                                    class="btn btn-primary viewBillBtn"
+                                    data-id="${bill.id}"
+                                    ${bill.status.toLowerCase() !== 'paid' ? 'disabled' : ''}>
+                                    View Receipt
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+
+            $('#billsTable tbody').html(rows);
             }
 
             loadBills();

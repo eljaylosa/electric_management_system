@@ -126,6 +126,11 @@ th {
 
 <script>
 $(document).ready(function(){
+    
+    $('#navToggle').click(function(){
+        $('#navMenu').toggleClass('active');
+    });
+
 
     /* ================= LOAD RATES ================= */
     function loadRates() {

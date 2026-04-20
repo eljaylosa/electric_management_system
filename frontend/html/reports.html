@@ -1,125 +1,227 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reports - Electric Management System</title>
-    <link rel="stylesheet" href="../css/style.css">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reports - Electric Management System</title>
+<link rel="stylesheet" href="../css/style.css">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
+
 <body>
-    <nav>
-        <div class="nav-container">
-            <div class="nav-logo">
-                <div class="logo-image">
-                    <img src="../../images/logo/electricity_logo2.png" alt="Logo" height="100px" width="100px">
-                </div>
-                Electric <span style="font-style: italic;">MS</span>
+<nav>
+    <div class="nav-container">
+        <div class="nav-logo">
+            <div class="logo-image">
+                <img src="../../images/logo/electricity_logo2.png" alt="Logo" height="100px" width="100px">
             </div>
-            <button class="nav-toggle" id="navToggle">&#9776;</button>
-            <ul id="navMenu">
-                <li><a href="dashboard.html">Dashboard</a></li>
-                <li><a href="rates.html">Rates</a></li>
-                <li><a href="consumers.html">Consumers</a></li>
-                <li><a href="billing.html">Billing</a></li>
-                <li><a href="payments.html">Payments</a></li>
-                <li><a href="reports.html">Reports</a></li>
-                <li><a href="../../backend/php/auth.php?action=logout">Logout</a></li>
-            </ul>
+            Electric <span style="font-style: italic;">MS</span>
         </div>
-    </nav>
+        <button class="nav-toggle" id="navToggle">&#9776;</button>
+        <ul id="navMenu">
+            <li><a href="dashboard.html">Dashboard</a></li>
+            <li><a href="rates.html">Rates</a></li>
+            <li><a href="consumers.html">Consumers</a></li>
+            <li><a href="billing.html">Billing</a></li>
+            <li><a href="payments.html">Payments</a></li>
+            <li><a href="reports.html">Reports</a></li>
+            <li><a href="../../backend/php/auth.php?action=logout">Logout</a></li>
+        </ul>
+    </div>
+</nav>
 
-    <div class="container">
-        <h1>Generate Reports</h1>
-        
-        <div class="dashboard-cards">
-            <div class="card">
-                <h3>Total Revenue</h3>
-                <div class="value" id="totalRevenue">₱0.00</div>
-            </div>
-            <div class="card">
-                <h3>Total Unpaid</h3>
-                <div class="value" id="totalUnpaid">₱0.00</div>
-            </div>
-            <div class="card">
-                <h3>Collection Rate</h3>
-                <div class="value" id="collectionRate">0%</div>
-            </div>
+<div class="container">
+    <h1>Generate Reports</h1>
+
+    <!-- FILTERS -->
+    <div class="filter-bar" style="margin-bottom:15px; display:flex; gap:10px; flex-wrap:wrap;">
+
+        <select id="monthFilter">
+            <option value="">All Months</option>
+            <option value="01">January</option>
+            <option value="02">February</option>
+            <option value="03">March</option>
+            <option value="04">April</option>
+            <option value="05">May</option>
+            <option value="06">June</option>
+            <option value="07">July</option>
+            <option value="08">August</option>
+            <option value="09">September</option>
+            <option value="10">October</option>
+            <option value="11">November</option>
+            <option value="12">December</option>
+        </select>
+
+        <select id="yearFilter"></select>
+
+        <select id="sortDate">
+            <option value="latest">Latest First</option>
+            <option value="oldest">Oldest First</option>
+        </select>
+
+        <button class="btn btn-primary" onclick="window.print()">Print Report</button>
+    </div>
+
+    <!-- CARDS -->
+    <div class="dashboard-cards">
+        <div class="card">
+            <h3>Total Revenue</h3>
+            <div class="value" id="totalRevenue">₱0.00</div>
         </div>
-
-        <div style="margin-bottom: 20px;">
-            <button class="btn btn-primary" onclick="window.print()">Print Full Report</button>
+        <div class="card">
+            <h3>Total Unpaid</h3>
+            <div class="value" id="totalUnpaid">₱0.00</div>
         </div>
-
-        <h2>Detailed Billing Report</h2>
-        <div class="table-responsive">
-            <table id="reportsTable">
-                <thead>
-                    <tr>
-                        <th>Consumer</th>
-                        <th>Meter No</th>
-                        <th>Amount</th>
-                        <th>Due Date</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Report data will be loaded here -->
-                </tbody>
-            </table>
+        <div class="card">
+            <h3>Collection Rate</h3>
+            <div class="value" id="collectionRate">0%</div>
         </div>
     </div>
 
-    <script>
-        $(document).ready(function() {
-            // Mobile Navigation Toggle
-            $('#navToggle').on('click', function() {
-                $('#navMenu').toggleClass('active');
-            });
+    <h2>Detailed Billing Report</h2>
 
-            function loadReportData() {
-                $.ajax({
-                    url: '../../backend/php/billing.php?action=get_all_bills',
-                    type: 'GET',
-                    dataType: 'json',
-                    success: function(response) {
-                        if (response.status === 'success') {
-                            let rows = '';
-                            let paidAmount = 0;
-                            let unpaidAmount = 0;
-                            
-                            response.data.forEach(bill => {
-                                if (bill.status === 'paid') {
-                                    paidAmount += parseFloat(bill.amount);
-                                } else {
-                                    unpaidAmount += parseFloat(bill.amount);
-                                }
-                                
-                                rows += `
-                                    <tr>
-                                        <td data-label="Consumer">${bill.consumer_name}</td>
-                                        <td data-label="Meter No">${bill.meter_no}</td>
-                                        <td data-label="Amount">₱${parseFloat(bill.amount).toFixed(2)}</td>
-                                        <td data-label="Due Date">${bill.due_date}</td>
-                                        <td data-label="Status" style="color: ${bill.status === 'paid' ? '#10b981' : '#ef4444'}; font-weight: bold;">${bill.status.toUpperCase()}</td>
-                                    </tr>
-                                `;
-                            });
-                            
-                            $('#reportsTable tbody').html(rows);
-                            $('#totalRevenue').text('₱' + paidAmount.toFixed(2));
-                            $('#totalUnpaid').text('₱' + unpaidAmount.toFixed(2));
-                            
-                            const total = paidAmount + unpaidAmount;
-                            const rate = total > 0 ? (paidAmount / total * 100).toFixed(1) : 0;
-                            $('#collectionRate').text(rate + '%');
-                        }
-                    }
-                });
+    <div class="table-responsive">
+        <table id="reportsTable">
+            <thead>
+                <tr>
+                    <th>Consumer</th>
+                    <th>Meter No</th>
+                    <th>Prev Reading</th>
+                    <th>Curr Reading</th>
+                    <th>Kilowatt Hour</th>
+                    <th>Amount</th>
+                    <th>Due Date</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+$(document).ready(function(){
+
+    let reportData = [];
+
+    $('#navToggle').click(function(){
+        $('#navMenu').toggleClass('active');
+    });
+
+    /* ================= LOAD YEARS ================= */
+    function loadYears() {
+        let currentYear = new Date().getFullYear();
+        let options = '<option value="">All Years</option>';
+
+        for (let y = currentYear; y >= currentYear - 5; y--) {
+            options += `<option value="${y}">${y}</option>`;
+        }
+
+        $('#yearFilter').html(options);
+    }
+
+    /* ================= LOAD DATA ================= */
+    function loadReportData() {
+        $.get('../../backend/php/billing.php?action=get_all_bills', function(res){
+
+            if(res.status === 'success'){
+
+                reportData = res.data;
+                renderReport(reportData);
             }
 
-            loadReportData();
+        }, 'json');
+    }
+
+    /* ================= RENDER ================= */
+    function renderReport(data){
+
+    let rows = '';
+    let paid = 0;
+    let unpaid = 0;
+
+    data.forEach(bill => {
+
+        let amount = parseFloat(bill.amount);
+
+        // compute kWh
+        let kwh = parseFloat(bill.curr_reading) - parseFloat(bill.prev_reading);
+        if (isNaN(kwh)) kwh = 0;
+
+        if(bill.status === 'paid') paid += amount;
+        else unpaid += amount;
+
+        let kwhStyle = '';
+        if (kwh >= 500) kwhStyle = 'style="color:red;font-weight:bold;"';
+        else if (kwh >= 200) kwhStyle = 'style="color:orange;"';
+
+        rows += `
+            <tr>
+                <td>${bill.consumer_name}</td>
+                <td>${bill.meter_no} NO.</td>
+
+                <td>${bill.prev_reading}</td>
+                <td>${bill.curr_reading}</td>
+
+                <td ${kwhStyle}>${kwh.toFixed(2)} kWh</td>
+
+                <td>₱${amount.toFixed(2)}</td>
+                <td>${bill.due_date}</td>
+
+                <td style="color:${bill.status === 'paid' ? 'green' : 'red'};font-weight:bold;">
+                    ${bill.status.toUpperCase()}
+                </td>
+            </tr>
+        `;
+    });
+
+    $('#reportsTable tbody').html(rows);
+
+    $('#totalRevenue').text('₱' + paid.toFixed(2));
+    $('#totalUnpaid').text('₱' + unpaid.toFixed(2));
+
+    let total = paid + unpaid;
+    let rate = total ? (paid / total * 100).toFixed(1) : 0;
+    $('#collectionRate').text(rate + '%');
+    }
+
+    /* ================= FILTER ================= */
+    function filterReport() {
+
+        let month = $('#monthFilter').val();
+        let year = $('#yearFilter').val();
+        let sort = $('#sortDate').val();
+
+        let filtered = reportData.filter(bill => {
+
+            let date = new Date(bill.due_date);
+            let billMonth = String(date.getMonth() + 1).padStart(2, '0');
+            let billYear = String(date.getFullYear());
+
+            let matchMonth = !month || billMonth === month;
+            let matchYear = !year || billYear === year;
+
+            return matchMonth && matchYear;
         });
-    </script>
+
+        // SORT
+        filtered.sort((a,b)=>{
+            return sort === 'latest'
+                ? new Date(b.due_date) - new Date(a.due_date)
+                : new Date(a.due_date) - new Date(b.due_date);
+        });
+
+        renderReport(filtered);
+    }
+
+    /* EVENTS */
+    $('#monthFilter, #yearFilter, #sortDate').on('change', filterReport);
+
+    loadYears();
+    loadReportData();
+
+});
+</script>
+
 </body>
 </html>

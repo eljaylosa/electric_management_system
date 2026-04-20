@@ -103,27 +103,30 @@
 
                 // load recent activities (for simplicity, we will just show recent bills)
                 // load also when a user pay bills on their customer dashboard, so we can show that activity here in real time
-                $.ajax({
-                    url: '../../backend/php/billing.php?action=get_recent_activities',
-                    type: 'POST',
-                    data: {action: 'get_recent_activities'},
-                    dataType: 'json',
-                    success: function(response) {
-                        if (response.status === 'success') {
-                            let rows = '';
-                            response.data.forEach(activity => {
-                                rows += `
-                                    <tr>
-                                        <td>${activity.description}</td>
-                                        <td>${activity.date}</td>
-                                        <td style="color: ${activity.status === 'success' ? '#10b981' : '#ef4444'}; font-weight: bold;">${activity.status.toUpperCase()}</td>
-                                    </tr>
-                                `;
-                            });
-                            $('#recentActivitiesTable tbody').html(rows);
+                // fix "paid" color should be green and "unpaid" color should be red, also make the status text bold
+                    $.ajax({
+                        url: '../../backend/php/billing.php?action=get_all_bills',
+                        type: 'GET',
+                        dataType: 'json',
+                        success: function(response) {
+                            if (response.status === 'success') {
+                                let rows = '';
+                                // show only the 5 most recent bills
+                                let recentBills = response.data.slice(-5).reverse();
+                                recentBills.forEach(bill => {
+                                    rows += `
+                                        <tr>
+                                            <td>${bill.consumer_name} - ₱${bill.amount}</td>
+                                            <td>${bill.due_date}</td>
+                                            <td style="color: ${bill.status === 'paid' ? '#2ecc71' : '#e74c3c'}; font-weight: bold;">${bill.status.toUpperCase()}</td>
+                                        </tr>
+                                    `;
+                                });
+                                $('#recentActivitiesTable tbody').html(rows);
+                            }
                         }
-                    }
-                });
+                    });
+                
                 
 
             }

@@ -13,6 +13,21 @@
     --border-color: #e2e8f0;
     --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
 }
+/* hide scroll bar */
+/* Chrome, Edge, Safari */
+    body::-webkit-scrollbar {
+        display: none;
+    }
+
+    /* Firefox */
+    body {
+        scrollbar-width: none;
+    }
+
+    /* IE/Old Edge */
+    body {
+        -ms-overflow-style: none;
+    }
 
 body {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -293,11 +308,18 @@ button:disabled {
     gap: 10px;
     margin: 15px 0;
     flex-wrap: wrap;
+    background-color: rgb(216, 216, 216);
+    padding: 15px;
+    border-radius: 10px;
 }
 
 /* bill search css */
 #billSearch,
-#statusFilter {
+#statusFilter,
+#kwhFilter,
+#monthFilter,
+#yearFilter,
+#sortDate {
     padding: 10px;
     border: 1px solid #ccc;
     border-radius: 6px;
@@ -306,14 +328,25 @@ button:disabled {
 }
 
 #billSearch:focus,
-#statusFilter:focus {
+#statusFilter:focus,
+#kwhFilter:focus,
+#monthFilter:focus,
+#yearFilter:focus,
+#sortDate:focus {
     border-color: #4CAF50;
     box-shadow: 0 0 5px rgba(76, 175, 80, 0.3);
 }
 
+
+
 /* Payment Search */
 #paymentSearch,
-#paymentStatusFilter {
+#paymentStatusFilter,
+#dateFrom,
+#dateTo,
+#minAmount,
+#maxAmount,
+#sortAmount {
     padding: 10px;
     border: 1px solid #ccc;
     border-radius: 6px;
@@ -322,7 +355,12 @@ button:disabled {
 }
 
 #paymentSearch:focus,
-#paymentStatusFilter:focus {
+#paymentStatusFilter:focus,
+#dateFrom:focus,
+#dateTo:focus,
+#minAmount:focus,
+#maxAmount:focus,
+#sortAmount:focus {
     border-color: #4CAF50;
     box-shadow: 0 0 5px rgba(76, 175, 80, 0.3);
 }

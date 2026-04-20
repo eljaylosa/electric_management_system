@@ -1,232 +1,307 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payments - Electric Management System</title>
-    <link rel="stylesheet" href="../css/style.css">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Payments - Electric Management System</title>
+
+<link rel="stylesheet" href="../css/style.css">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 
 <body>
-    <nav>
-        <div class="nav-container">
-            <div class="nav-logo">
-                <div class="logo-image">
-                    <img src="../../images/logo/electricity_logo2.png" alt="Logo" height="100px" width="100px">
-                </div>
-                Electric <span style="font-style: italic;">MS</span>
+
+<nav>
+    <div class="nav-container">
+        <div class="nav-logo">
+            <div class="logo-image">
+                <img src="../../images/logo/electricity_logo2.png" alt="Logo" height="100px" width="100px">
             </div>
-            <button class="nav-toggle" id="navToggle">&#9776;</button>
-            <ul id="navMenu">
-                <li><a href="dashboard.html">Dashboard</a></li>
-                <li><a href="rates.html">Rates</a></li>
-                <li><a href="consumers.html">Consumers</a></li>
-                <li><a href="billing.html">Billing</a></li>
-                <li><a href="payments.html">Payments</a></li>
-                <li><a href="reports.html">Reports</a></li>
-                <li><a href="../../backend/php/auth.php?action=logout">Logout</a></li>
-            </ul>
+            Electric <span style="font-style: italic;">MS</span>
         </div>
-    </nav>
+        <button class="nav-toggle" id="navToggle">&#9776;</button>
+        <ul id="navMenu">
+            <li><a href="dashboard.html">Dashboard</a></li>
+            <li><a href="rates.html">Rates</a></li>
+            <li><a href="consumers.html">Consumers</a></li>
+            <li><a href="billing.html">Billing</a></li>
+            <li><a href="payments.html">Payments</a></li>
+            <li><a href="reports.html">Reports</a></li>
+            <li><a href="../../backend/php/auth.php?action=logout">Logout</a></li>
+        </ul>
+    </div>
+</nav>
 
-    <div class="container">
-        <h1>Payment Collection</h1>
+<div class="container">
+    <h1>Payment Collection</h1>
 
-        <button class="btn btn-success" id="recordPaymentBtn">
-            Record New Payment
-        </button>
+    <button class="btn btn-success" id="recordPaymentBtn">Record New Payment</button>
 
-        <div class="filter-bar">
-            <input type="text" id="paymentSearch" placeholder="Search consumer...">
-        </div>
+    <!-- FILTERS -->
+    <div class="filter-bar" style="margin-top:15px; display:flex; gap:10px; flex-wrap:wrap;">
+        <input type="text" id="paymentSearch" placeholder="Search consumer...">
 
-        <!-- FORM -->
-        <div id="paymentFormContainer" style="display:none; margin-top:20px;">
-            <h2>Record New Payment</h2>
+        <label for="dateFrom">Date From:</label>
+        <input type="date" id="dateFrom">
+        <label for="dateTo">Date To:</label>
+        <input type="date" id="dateTo">
 
-            <form id="paymentForm">
-                <input type="hidden" name="action" value="record_payment">
+        <input type="number" id="minAmount" placeholder="Min ₱">
+        <input type="number" id="maxAmount" placeholder="Max ₱">
 
-                <label>Unpaid Bill</label>
-                <select id="bill_id" name="bill_id" required></select>
+        <select id="sortAmount">
+            <option value="">Sort Amount</option>
+            <option value="high">Highest First</option>
+            <option value="low">Lowest First</option>
+        </select>
 
-                <label>Amount Paid</label>
-                <input type="number" id="amount_paid" name="amount_paid" step="0.01" readonly required>
-
-                <label>Payment Date</label>
-                <input type="date" id="payment_date" name="payment_date" required>
-
-                <button type="submit">Record Payment</button>
-
-                <button type="button" class="btn btn-danger" id="cancelBtn"
-                        style="width:100%; margin-top:10px;">
-                    Cancel
-                </button>
-            </form>
-        </div>
-
-        <!-- TABLE -->
-        <div class="table-responsive">
-            <table id="paymentsTable">
-                <thead>
-                    <tr>
-                        <th>Consumer</th>
-                        <th>Bill Amount</th>
-                        <th>Amount Paid</th>
-                        <th>Payment Date</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
+        <select id="monthFilter">
+            <option value="">All Months</option>
+            <option value="01">January</option>
+            <option value="02">February</option>
+            <option value="03">March</option>
+            <option value="04">April</option>
+            <option value="05">May</option>
+            <option value="06">June</option>
+            <option value="07">July</option>
+            <option value="08">August</option>
+            <option value="09">September</option>
+            <option value="10">October</option>
+            <option value="11">November</option>
+            <option value="12">December</option>
+        </select>
+        
+        <input type="number" id="yearFilter" placeholder="Year (e.g. 2026)">
+        
+        <select id="sortDate">
+            <option value="">Sort Date</option>
+            <option value="latest">Latest First</option>
+            <option value="oldest">Oldest First</option>
+        </select>
     </div>
 
-    <script>
-        $(document).ready(function () {
+    <!-- FORM -->
+    <div id="paymentFormContainer" style="display:none; margin-top:20px;">
+        <h2>Record New Payment</h2>
 
-            // NAV
-            $('#navToggle').on('click', function () {
-                $('#navMenu').toggleClass('active');
-            });
+        <form id="paymentForm">
+            <input type="hidden" name="action" value="record_payment">
 
-            // SEARCH & FILTER
-            function filterPayments() {
-                const search = $('#paymentSearch').val().toLowerCase();
-                const status = $('#paymentStatusFilter').val().toLowerCase();
+            <label>Unpaid Bill</label>
+            <select id="bill_id" name="bill_id" required></select>
 
-                $('#paymentsTable tbody tr').filter(function () {
+            <label>Amount Paid</label>
+            <input type="number" id="amount_paid" name="amount_paid" readonly required>
 
-                    const rowText = $(this).text().toLowerCase();
+            <label>Payment Date</label>
+            <input type="date" id="payment_date" name="payment_date" required>
 
-                    // since all rows are "paid" in your current system
-                    const matchesSearch = rowText.includes(search);
-                    const matchesStatus = status === "" || rowText.includes(status);
+            <button type="submit">Record Payment</button>
+            <button type="button" class="btn btn-danger" id="cancelBtn">Cancel</button>
+        </form>
+    </div>
 
-                    $(this).toggle(matchesSearch && matchesStatus);
-                });
+    <!-- TABLE -->
+    <table id="paymentsTable">
+        <thead>
+            <tr>
+                <th>Consumer</th>
+                <th>Bill Amount</th>
+                <th>Amount Paid</th>
+                <th>Payment Date</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<script>
+$(document).ready(function(){
+
+    $('#navToggle').click(function(){
+        $('#navMenu').toggleClass('active');
+    });
+
+    let paymentsData = [];
+
+    /* ================= LOAD PAYMENTS ================= */
+    function loadPayments() {
+        $.get('../../backend/php/billing.php?action=get_all_payments', function(res){
+
+            if(res.status === 'success'){
+                paymentsData = res.data;
+
+                // default sort: latest first
+                paymentsData.sort((a,b) => new Date(b.payment_date) - new Date(a.payment_date));
+
+                renderPayments(paymentsData);
             }
 
-// events
-$('#paymentSearch').on('keyup', filterPayments);
-$('#paymentStatusFilter').on('change', filterPayments);
+        }, 'json');
+    }
 
-            /* =========================
-               LOAD PAYMENTS (REAL DATA)
-            ========================== */
-            function loadPayments() {
-                $.ajax({
-                    url: '../../backend/php/billing.php?action=get_all_payments',
-                    type: 'GET',
-                    dataType: 'json',
-                    success: function (response) {
+    /* ================= RENDER ================= */
+    function renderPayments(data){
 
-                        let rows = '';
+        let rows = '';
 
-                        if (response.status === 'success') {
+        if(data.length === 0){
+            rows = '<tr><td colspan="4" style="text-align:center;">No payments found</td></tr>';
+        } else {
 
-                            if (response.data.length === 0) {
-                                rows = `<tr><td colspan="4" style="text-align:center;">No payments found.</td></tr>`;
-                            } else {
-
-                                response.data.forEach(p => {
-                                    rows += `
-                                        <tr>
-                                            <td>${p.consumer_name}</td>
-                                            <td>₱${parseFloat(p.amount).toFixed(2)}</td>
-                                            <td>₱${parseFloat(p.amount_paid).toFixed(2)}</td>
-                                            <td>${p.payment_date}</td>
-                                        </tr>
-                                    `;
-                                });
-                            }
-
-                            $('#paymentsTable tbody').html(rows);
-
-                        } else {
-                            alert(response.message);
-                        }
-                    }
-                });
-            }
-
-            loadPayments();
-
-            /* =========================
-               LOAD UNPAID BILLS
-            ========================== */
-            function loadUnpaidBills() {
-                $.ajax({
-                    url: '../../backend/php/billing.php?action=get_all_bills',
-                    type: 'GET',
-                    dataType: 'json',
-                    success: function (response) {
-
-                        let options = `<option value="">Select Unpaid Bill</option>`;
-
-                        response.data.forEach(bill => {
-                            if (bill.status === 'unpaid') {
-                                options += `
-                                    <option value="${bill.id}" data-amount="${bill.amount}">
-                                        ${bill.consumer_name} - ₱${parseFloat(bill.amount).toFixed(2)}
-                                    </option>
-                                `;
-                            }
-                        });
-
-                        $('#bill_id').html(options);
-                    }
-                });
-            }
-
-            /* =========================
-               SHOW FORM
-            ========================== */
-            $('#recordPaymentBtn').on('click', function () {
-                loadUnpaidBills();
-                $('#paymentForm')[0].reset();
-                $('#paymentFormContainer').show();
+            data.forEach(p=>{
+                rows += `
+                    <tr>
+                        <td>${p.consumer_name}</td>
+                        <td>₱${parseFloat(p.amount).toFixed(2)}</td>
+                        <td>₱${parseFloat(p.amount_paid).toFixed(2)}</td>
+                        <td>${p.payment_date}</td>
+                        <!-- NEW -->
+                        <td>
+                            <button class="btn btn-primary printBtn" data-bill="${p.bill_id}">
+                                Print Receipt
+                            </button>
+                        </td>
+                    </tr>
+                `;
             });
+        }
 
-            /* =========================
-               AUTO FILL AMOUNT
-            ========================== */
-            $('#bill_id').on('change', function () {
-                let amount = $(this).find(':selected').data('amount');
-                $('#amount_paid').val(amount || '');
-            });
+        $('#paymentsTable tbody').html(rows);
+    }
 
-            /* =========================
-               CANCEL FORM
-            ========================== */
-            $('#cancelBtn').on('click', function () {
-                $('#paymentFormContainer').hide();
-            });
+    // click event for print button
+    $(document).on('click', '.printBtn', function(){
 
-            /* =========================
-               SUBMIT PAYMENT
-            ========================== */
-            $('#paymentForm').on('submit', function (e) {
-                e.preventDefault();
+        let billId = $(this).data('bill');
 
-                $.ajax({
-                    url: '../../backend/php/billing.php',
-                    type: 'POST',
-                    data: $(this).serialize(),
-                    dataType: 'json',
-                    success: function (response) {
+        // open receipt page
+        window.open(`receipt.html?id=${billId}`, '_blank');
 
-                        alert(response.message);
+    });
 
-                        if (response.status === 'success') {
-                            $('#paymentFormContainer').hide();
-                            loadPayments();
-                        }
-                    }
-                });
-            });
+    /* ================= FILTER ================= */
+    function filterPayments(){
 
+        let search = $('#paymentSearch').val().toLowerCase();
+        let from = $('#dateFrom').val();
+        let to = $('#dateTo').val();
+        let min = parseFloat($('#minAmount').val()) || 0;
+        let max = parseFloat($('#maxAmount').val()) || Infinity;
+
+        let monthFilter = $('#monthFilter').val();
+        let yearFilter = $('#yearFilter').val();
+        let sortAmount = $('#sortAmount').val();
+        let sortDate = $('#sortDate').val();
+
+        let filtered = paymentsData.filter(p => {
+
+            let matchesSearch = p.consumer_name.toLowerCase().includes(search);
+
+            // DATE RANGE
+            let matchesDate = true;
+            if(from && p.payment_date < from) matchesDate = false;
+            if(to && p.payment_date > to) matchesDate = false;
+
+            // MONTH + YEAR
+            let dateObj = new Date(p.payment_date);
+            let month = ("0" + (dateObj.getMonth() + 1)).slice(-2);
+            let year = dateObj.getFullYear().toString();
+
+            let matchesMonth = monthFilter === "" || month === monthFilter;
+            let matchesYear = yearFilter === "" || year === yearFilter;
+
+            // AMOUNT
+            let amount = parseFloat(p.amount_paid);
+            let matchesAmount = amount >= min && amount <= max;
+
+            return matchesSearch && matchesDate && matchesAmount && matchesMonth && matchesYear;
         });
-    </script>
+
+        // SORT BY AMOUNT
+        if(sortAmount === 'high'){
+            filtered.sort((a,b)=> b.amount_paid - a.amount_paid);
+        }
+        if(sortAmount === 'low'){
+            filtered.sort((a,b)=> a.amount_paid - b.amount_paid);
+        }
+
+        // SORT BY DATE
+        if(sortDate === 'latest'){
+            filtered.sort((a,b)=> new Date(b.payment_date) - new Date(a.payment_date));
+        }
+        if(sortDate === 'oldest'){
+            filtered.sort((a,b)=> new Date(a.payment_date) - new Date(b.payment_date));
+        }
+
+        renderPayments(filtered);
+    }
+
+    // events
+
+    $('#yearFilter').val(new Date().getFullYear());
+
+    $('#paymentSearch, #dateFrom, #dateTo, #minAmount, #maxAmount, #yearFilter')
+    .on('input', filterPayments);
+
+    $('#sortAmount, #sortDate, #monthFilter')
+    .on('change', filterPayments);
+
+
+    /* ================= UNPAID BILLS ================= */
+    function loadUnpaidBills(){
+        $.get('../../backend/php/billing.php?action=get_all_bills', function(res){
+
+            let options = '<option value="">Select Bill</option>';
+
+            res.data.forEach(b=>{
+                if(b.status === 'unpaid'){
+                    options += `<option value="${b.id}" data-amount="${b.amount}">
+                        ${b.consumer_name} - ₱${b.amount}
+                    </option>`;
+                }
+            });
+
+            $('#bill_id').html(options);
+
+        }, 'json');
+    }
+
+    /* ================= FORM ================= */
+    $('#recordPaymentBtn').click(function(){
+        loadUnpaidBills();
+        $('#paymentForm')[0].reset();
+        $('#paymentFormContainer').show();
+    });
+
+    $('#cancelBtn').click(function(){
+        $('#paymentFormContainer').hide();
+    });
+
+    $('#bill_id').change(function(){
+        let amount = $(this).find(':selected').data('amount');
+        $('#amount_paid').val(amount || '');
+    });
+
+    $('#paymentForm').submit(function(e){
+        e.preventDefault();
+
+        $.post('../../backend/php/billing.php', $(this).serialize(), function(res){
+
+            alert(res.message);
+
+            if(res.status === 'success'){
+                $('#paymentFormContainer').hide();
+                loadPayments();
+            }
+
+        }, 'json');
+    });
+
+    loadPayments();
+});
+</script>
+
 </body>
 </html>
