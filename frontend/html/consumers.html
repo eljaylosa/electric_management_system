@@ -10,16 +10,14 @@
 <body>
     <nav>
         <div class="nav-container">
-            <div class="nav-logo">
-                <img src="../../images/logo/electricity_logo.png" alt="" height="100px" width="100px">
-                <p>Electric MS</p>
-            </div>
+            <div class="nav-logo">Electric MS</div>
             <button class="nav-toggle" id="navToggle">&#9776;</button>
             <ul id="navMenu">
                 <li><a href="dashboard.html">Dashboard</a></li>
                 <li><a href="consumers.html">Consumers</a></li>
                 <li><a href="billing.html">Billing</a></li>
                 <li><a href="payments.html">Payments</a></li>
+                <li><a href="reports.html">Reports</a></li>
                 <li><a href="../../backend/php/auth.php?action=logout">Logout</a></li>
             </ul>
         </div>
@@ -29,11 +27,15 @@
         <h1>Consumer Management</h1>
         <button class="btn btn-success" id="addConsumerBtn">Add New Consumer</button>
 
-        <div class="search-container">
-            <label for="searchInput" style="display: block;">Search Consumers:</label>
-            <input type="text" name="" id="searchInput">
+        <div class="filter-bar" style="margin: 15px 0; display: flex; gap: 10px; flex-wrap: wrap;">
+            <input type="text" id="searchInput" placeholder="Search name / meter / address..." style="flex:1; padding:10px;">
+        
+            <select id="categoryFilter">
+                <option value="">All Categories</option>
+                <option value="Residential">Residential</option>
+                <option value="Commercial">Commercial</option>
+            </select>
         </div>
-
 
         <div id="consumerFormContainer" style="display: none; margin-top: 20px;">
             <h2 id="formTitle">Add New Consumer</h2>
@@ -84,23 +86,25 @@
                 $('#navMenu').toggleClass('active');
             });
 
-            // Search function
-            $('#searchInput').on('input', function() {
-                const searchTerm = $(this).val().toLowerCase();
-                $('#consumersTable tbody tr').each(function() {
-                    const name = $(this).find('td[data-label="Name"]').text().toLowerCase();
-                    const address = $(this).find('td[data-label="Address"]').text().toLowerCase();
-                    const contact = $(this).find('td[data-label="Contact"]').text().toLowerCase();
-                    const meterNo = $(this).find('td[data-label="Meter No"]').text().toLowerCase();
-                    const category = $(this).find('td[data-label="Category"]').text().toLowerCase();
+            // filter logic 
+            function filterTable() {
+                const searchValue = $('#searchInput').val().toLowerCase();
+                const categoryValue = $('#categoryFilter').val().toLowerCase();
 
-                    if (name.includes(searchTerm) || address.includes(searchTerm) || contact.includes(searchTerm) || meterNo.includes(searchTerm) || category.includes(searchTerm)) {
-                        $(this).show();
-                    } else {
-                        $(this).hide();
-                    }
+                $('#consumersTable tbody tr').filter(function () {
+                    const rowText = $(this).text().toLowerCase();
+                    const rowCategory = $(this).find('td:nth-child(5)').text().toLowerCase();
+
+                    const matchesSearch = rowText.indexOf(searchValue) > -1;
+                    const matchesCategory = categoryValue === "" || rowCategory === categoryValue;
+
+                    $(this).toggle(matchesSearch && matchesCategory);
                 });
-            });
+            }
+
+            // events
+            $('#searchInput').on('keyup', filterTable);
+            $('#categoryFilter').on('change', filterTable);
 
             // Load all consumers
             function loadConsumers() {
@@ -111,6 +115,7 @@
                     success: function(response) {
                         if (response.status === 'success') {
                             let rows = '';
+                            
                             if (response.data.length === 0) {
                                 rows = '<tr><td colspan="6" style="text-align:center;">No consumers found.</td></tr>';
                             } else {
@@ -131,6 +136,8 @@
                                 });
                             }
                             $('#consumersTable tbody').html(rows);
+                            $('#searchInput').val('');
+                            $('#categoryFilter').val('');
                         } else {
                             alert('Error: ' + response.message);
                         }

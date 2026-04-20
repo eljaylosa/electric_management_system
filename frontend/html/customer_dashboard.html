@@ -10,11 +10,7 @@
 <body>
     <nav>
         <div class="nav-container">
-            <div class="nav-logo">
-                <img src="../../images/logo/electricity_logo.png" alt="" height="100px" width="100px">
-                <p>Electric MS</p>
-            </div>
-            
+            <div class="nav-logo">Electric MS</div>
             <button class="nav-toggle" id="navToggle">&#9776;</button>
             <ul id="navMenu">
                 <li><a href="customer_dashboard.html">My Dashboard</a></li>
@@ -24,7 +20,7 @@
     </nav>
 
     <div class="container">
-        <h1>Welcome, <span id="customerName" style="opacity: .75;">Customer</span></h1>
+        <h1>Welcome, <span id="customerName">Customer</span></h1>
         <div class="dashboard-cards">
             <div class="card">
                 <h3>Total Bills</h3>
@@ -49,7 +45,7 @@
                         <th>Reading (Prev/Curr)</th>
                         <th>Amount</th>
                         <th>Status</th>
-                        <th>Action</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -97,9 +93,14 @@
                                             <td data-label="Reading">${bill.prev_reading} / ${bill.curr_reading}</td>
                                             <td data-label="Amount">₱${parseFloat(bill.amount).toFixed(2)}</td>
                                             <td data-label="Status" style="color: ${bill.status === 'paid' ? '#2ecc71' : '#e74c3c'}; font-weight: bold;">${bill.status.toUpperCase()}</td>
-                                            // add action for print receipt if bill is paid, it should generate a pdf receipt with the bill details
-                                            <td data-label="Action">
-                                                ${bill.status === 'paid' ? `<a href="receipt.html?bill_id=${bill.id}" target="_blank" class="btn btn-sm">Print Receipt</a>` : ''}
+                                            <td data-label="Actions">
+                                                <button 
+                                                    class="btn btn-primary viewBillBtn ${bill.status !== 'paid' ? 'disabled-btn' : ''}"
+                                                    data-id="${bill.id}"
+                                                    ${bill.status !== 'paid' ? 'disabled' : ''}>
+                                                    View Receipt
+                                                </button>
+                                            </td>
                                         </tr>
                                     `;
                                 });
@@ -116,6 +117,12 @@
             }
 
             loadCustomerData();
+
+            // View bill details (Open Receipt)
+            $(document).on('click', '.viewBillBtn', function() {
+                const id = $(this).data('id');
+                window.open(`receipt.html?id=${id}`, '_blank');
+            });
         });
     </script>
 </body>

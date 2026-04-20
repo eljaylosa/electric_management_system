@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports - Electric Management System</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <nav>
+        <div class="nav-container">
+            <div class="nav-logo">Electric MS</div>
+            <button class="nav-toggle" id="navToggle">&#9776;</button>
+            <ul id="navMenu">
+                <li><a href="dashboard.html">Dashboard</a></li>
+                <li><a href="consumers.html">Consumers</a></li>
+                <li><a href="billing.html">Billing</a></li>
+                <li><a href="payments.html">Payments</a></li>
+                <li><a href="reports.html">Reports</a></li>
+                <li><a href="../../backend/php/auth.php?action=logout">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>Generate Reports</h1>
+        
+        <div class="dashboard-cards">
+            <div class="card">
+                <h3>Total Revenue</h3>
+                <div class="value" id="totalRevenue">₱0.00</div>
+            </div>
+            <div class="card">
+                <h3>Total Unpaid</h3>
+                <div class="value" id="totalUnpaid">₱0.00</div>
+            </div>
+            <div class="card">
+                <h3>Collection Rate</h3>
+                <div class="value" id="collectionRate">0%</div>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <button class="btn btn-primary" onclick="window.print()">Print Full Report</button>
+        </div>
+
+        <h2>Detailed Billing Report</h2>
+        <div class="table-responsive">
+            <table id="reportsTable">
+                <thead>
+                    <tr>
+                        <th>Consumer</th>
+                        <th>Meter No</th>
+                        <th>Amount</th>
+                        <th>Due Date</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Report data will be loaded here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            // Mobile Navigation Toggle
+            $('#navToggle').on('click', function() {
+                $('#navMenu').toggleClass('active');
+            });
+
+            function loadReportData() {
+                $.ajax({
+                    url: '../../backend/php/billing.php?action=get_all_bills',
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.status === 'success') {
+                            let rows = '';
+                            let paidAmount = 0;
+                            let unpaidAmount = 0;
+                            
+                            response.data.forEach(bill => {
+                                if (bill.status === 'paid') {
+                                    paidAmount += parseFloat(bill.amount);
+                                } else {
+                                    unpaidAmount += parseFloat(bill.amount);
+                                }
+                                
+                                rows += `
+                                    <tr>
+                                        <td data-label="Consumer">${bill.consumer_name}</td>
+                                        <td data-label="Meter No">${bill.meter_no}</td>
+                                        <td data-label="Amount">₱${parseFloat(bill.amount).toFixed(2)}</td>
+                                        <td data-label="Due Date">${bill.due_date}</td>
+                                        <td data-label="Status" style="color: ${bill.status === 'paid' ? '#10b981' : '#ef4444'}; font-weight: bold;">${bill.status.toUpperCase()}</td>
+                                    </tr>
+                                `;
+                            });
+                            
+                            $('#reportsTable tbody').html(rows);
+                            $('#totalRevenue').text('₱' + paidAmount.toFixed(2));
+                            $('#totalUnpaid').text('₱' + unpaidAmount.toFixed(2));
+                            
+                            const total = paidAmount + unpaidAmount;
+                            const rate = total > 0 ? (paidAmount / total * 100).toFixed(1) : 0;
+                            $('#collectionRate').text(rate + '%');
+                        }
+                    }
+                });
+            }
+
+            loadReportData();
+        });
+    </script>
+</body>
+</html>

@@ -10,16 +10,14 @@
 <body>
     <nav>
         <div class="nav-container">
-            <div class="nav-logo">
-                <img src="../../images/logo/electricity_logo.png" alt="" height="100px" width="100px">
-                <p>Electric MS</p>
-            </div>
+            <div class="nav-logo">Electric MS</div>
             <button class="nav-toggle" id="navToggle">&#9776;</button>
             <ul id="navMenu">
                 <li><a href="dashboard.html">Dashboard</a></li>
                 <li><a href="consumers.html">Consumers</a></li>
                 <li><a href="billing.html">Billing</a></li>
                 <li><a href="payments.html">Payments</a></li>
+                <li><a href="reports.html">Reports</a></li>
                 <li><a href="../../backend/php/auth.php?action=logout">Logout</a></li>
             </ul>
         </div>
@@ -29,13 +27,19 @@
         <h1>Billing Management</h1>
         <button class="btn btn-success" id="addReadingBtn">Add New Reading</button>
 
-        <div class="search-container">
-            <label for="searchInput" style="display: block;">Search Billing:</label>
-            <input type="text" name="" id="searchInput">
+        <div class="filter-bar">
+            <input type="text" id="billSearch" placeholder="Search consumer / status / date...">
+        
+            <select id="statusFilter">
+                <option value="">All Status</option>
+                <option value="paid">Paid</option>
+                <option value="unpaid">Unpaid</option>
+            </select>
         </div>
 
         <div id="readingFormContainer" style="display: none; margin-top: 20px;">
             <h2>Add New Reading</h2>
+
             <form id="readingForm">
                 <input type="hidden" name="action" value="add_reading">
                 <label for="consumer_id">Consumer</label>
@@ -81,15 +85,26 @@
             $('#navToggle').on('click', function() {
                 $('#navMenu').toggleClass('active');
             });
+            
+            // filter bills
+            function filterBills() {
+                const searchValue = $('#billSearch').val().toLowerCase();
+                const statusValue = $('#statusFilter').val().toLowerCase();
 
-            // Search functionality
-            $('#searchInput').on('input', function() {
-                const searchTerm = $(this).val().toLowerCase();
-                $('#billsTable tbody tr').each(function() {
+                $('#billsTable tbody tr').filter(function () {
                     const rowText = $(this).text().toLowerCase();
-                    $(this).toggle(rowText.indexOf(searchTerm) > -1);
+                    const rowStatus = $(this).find('td:nth-child(6)').text().toLowerCase();
+
+                    const matchesSearch = rowText.indexOf(searchValue) > -1;
+                    const matchesStatus = statusValue === "" || rowStatus === statusValue;
+
+                    $(this).toggle(matchesSearch && matchesStatus);
                 });
-            });
+            }
+
+            // events
+            $('#billSearch').on('keyup', filterBills);
+            $('#statusFilter').on('change', filterBills);
 
             // Load all bills
             function loadBills() {
@@ -113,10 +128,15 @@
                                             <td data-label="Due Date">${bill.due_date}</td>
                                             <td data-label="Status">${bill.status}</td>
                                             <td data-label="Actions">
-                                                <button class="btn btn-primary viewBillBtn" data-id="${bill.id}">View</button>
+                                                <button 
+                                                    class="btn btn-primary viewBillBtn"
+                                                    data-id="${bill.id}"
+                                                    ${bill.status.toLowerCase() !== 'paid' ? 'disabled' : ''}>
+                                                    View Receipt
+                                                </button>
                                             </td>
                                         </tr>
-                                    `;
+                                        `;
                                 });
                             }
                             $('#billsTable tbody').html(rows);
@@ -162,6 +182,12 @@
             // Cancel form
             $('#cancelBtn').on('click', function() {
                 $('#readingFormContainer').hide();
+            });
+
+            // View bill details (Open Receipt)
+            $(document).on('click', '.viewBillBtn', function() {
+                const id = $(this).data('id');
+                window.open(`receipt.html?id=${id}`, '_blank');
             });
 
             // Submit reading form

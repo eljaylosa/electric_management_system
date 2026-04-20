@@ -7,19 +7,18 @@
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
+
 <body>
     <nav>
         <div class="nav-container">
-            <div class="nav-logo">
-                <img src="../../images/logo/electricity_logo.png" alt="" height="100px" width="100px">
-                <p>Electric MS</p>
-            </div>
+            <div class="nav-logo">Electric MS</div>
             <button class="nav-toggle" id="navToggle">&#9776;</button>
             <ul id="navMenu">
                 <li><a href="dashboard.html">Dashboard</a></li>
                 <li><a href="consumers.html">Consumers</a></li>
                 <li><a href="billing.html">Billing</a></li>
                 <li><a href="payments.html">Payments</a></li>
+                <li><a href="reports.html">Reports</a></li>
                 <li><a href="../../backend/php/auth.php?action=logout">Logout</a></li>
             </ul>
         </div>
@@ -27,30 +26,46 @@
 
     <div class="container">
         <h1>Payment Collection</h1>
-        <button class="btn btn-success" id="recordPaymentBtn">Record New Payment</button>
 
-        <div class="search-container">
-            <label for="searchInput" style="display: block;">Search Payments:</label>
-            <input type="text" name="" id="searchInput">
+        <button class="btn btn-success" id="recordPaymentBtn">
+            Record New Payment
+        </button>
+
+        <div class="filter-bar">
+            <input type="text" id="paymentSearch" placeholder="Search consumer...">
+        
+            <select id="paymentStatusFilter">
+                <option value="">All Status</option>
+                <option value="paid">Paid</option>
+            </select>
         </div>
 
-        <div id="paymentFormContainer" style="display: none; margin-top: 20px;">
+        <!-- FORM -->
+        <div id="paymentFormContainer" style="display:none; margin-top:20px;">
             <h2>Record New Payment</h2>
+
             <form id="paymentForm">
                 <input type="hidden" name="action" value="record_payment">
-                <label for="bill_id">Unpaid Bill</label>
-                <select id="bill_id" name="bill_id" required>
-                    <!-- Unpaid bills will be loaded here via AJAX -->
-                </select>
-                <label for="amount_paid">Amount Paid</label>
-                <input type="number" id="amount_paid" name="amount_paid" step="0.01" required readonly>
-                <label for="payment_date">Payment Date</label>
+
+                <label>Unpaid Bill</label>
+                <select id="bill_id" name="bill_id" required></select>
+
+                <label>Amount Paid</label>
+                <input type="number" id="amount_paid" name="amount_paid" step="0.01" readonly required>
+
+                <label>Payment Date</label>
                 <input type="date" id="payment_date" name="payment_date" required>
+
                 <button type="submit">Record Payment</button>
-                <button type="button" class="btn btn-danger" id="cancelBtn" style="width: 100%; margin-top: 10px;">Cancel</button>
+
+                <button type="button" class="btn btn-danger" id="cancelBtn"
+                        style="width:100%; margin-top:10px;">
+                    Cancel
+                </button>
             </form>
         </div>
 
+        <!-- TABLE -->
         <div class="table-responsive">
             <table id="paymentsTable">
                 <thead>
@@ -61,124 +76,155 @@
                         <th>Payment Date</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <!-- Payments will be loaded here via AJAX -->
-                </tbody>
+                <tbody></tbody>
             </table>
         </div>
     </div>
 
     <script>
-        $(document).ready(function() {
-            // Mobile Navigation Toggle
-            $('#navToggle').on('click', function() {
+        $(document).ready(function () {
+
+            // NAV
+            $('#navToggle').on('click', function () {
                 $('#navMenu').toggleClass('active');
             });
 
-            // Search functionality
-            $('#searchInput').on('input', function() {
-                const query = $(this).val().toLowerCase();
-                $('#paymentsTable tbody tr').filter(function() {
-                    $(this).toggle($(this).text().toLowerCase().indexOf(query) > -1);
-                });
-            });
+            // SEARCH & FILTER
+            function filterPayments() {
+                const search = $('#paymentSearch').val().toLowerCase();
+                const status = $('#paymentStatusFilter').val().toLowerCase();
 
-            // Load all payments
+                $('#paymentsTable tbody tr').filter(function () {
+
+                    const rowText = $(this).text().toLowerCase();
+
+                    // since all rows are "paid" in your current system
+                    const matchesSearch = rowText.includes(search);
+                    const matchesStatus = status === "" || rowText.includes(status);
+
+                    $(this).toggle(matchesSearch && matchesStatus);
+                });
+            }
+
+// events
+$('#paymentSearch').on('keyup', filterPayments);
+$('#paymentStatusFilter').on('change', filterPayments);
+
+            /* =========================
+               LOAD PAYMENTS (REAL DATA)
+            ========================== */
             function loadPayments() {
                 $.ajax({
-                    url: '../../backend/php/billing.php?action=get_all_bills',
+                    url: '../../backend/php/billing.php?action=get_all_payments',
                     type: 'GET',
                     dataType: 'json',
-                    success: function(response) {
+                    success: function (response) {
+
+                        let rows = '';
+
                         if (response.status === 'success') {
-                            let rows = '';
-                            let paidBills = response.data.filter(bill => bill.status === 'paid');
-                            if (paidBills.length === 0) {
-                                rows = '<tr><td colspan="4" style="text-align:center;">No payments found.</td></tr>';
+
+                            if (response.data.length === 0) {
+                                rows = `<tr><td colspan="4" style="text-align:center;">No payments found.</td></tr>`;
                             } else {
-                                paidBills.forEach(bill => {
+
+                                response.data.forEach(p => {
                                     rows += `
                                         <tr>
-                                            <td data-label="Consumer">${bill.consumer_name}</td>
-                                            <td data-label="Bill Amount">₱${parseFloat(bill.amount).toFixed(2)}</td>
-                                            <td data-label="Amount Paid">₱${parseFloat(bill.amount).toFixed(2)}</td>
-                                            <td data-label="Payment Date">${bill.due_date}</td>
+                                            <td>${p.consumer_name}</td>
+                                            <td>₱${parseFloat(p.amount).toFixed(2)}</td>
+                                            <td>₱${parseFloat(p.amount_paid).toFixed(2)}</td>
+                                            <td>${p.payment_date}</td>
                                         </tr>
                                     `;
                                 });
                             }
+
                             $('#paymentsTable tbody').html(rows);
+
                         } else {
-                            alert('Error: ' + response.message);
+                            alert(response.message);
                         }
-                    },
-                    error: function(xhr, status, error) {
-                        console.error('AJAX Error: ' + status + ' - ' + error);
-                        $('#paymentsTable tbody').html('<tr><td colspan="4" style="text-align:center; color:red;">Failed to load data. Check console for details.</td></tr>');
                     }
                 });
             }
 
             loadPayments();
 
-            // Load unpaid bills for the dropdown
+            /* =========================
+               LOAD UNPAID BILLS
+            ========================== */
             function loadUnpaidBills() {
                 $.ajax({
                     url: '../../backend/php/billing.php?action=get_all_bills',
                     type: 'GET',
                     dataType: 'json',
-                    success: function(response) {
-                        if (response.status === 'success') {
-                            let options = '<option value="">Select Unpaid Bill</option>';
-                            response.data.forEach(bill => {
-                                if (bill.status === 'unpaid') {
-                                    options += `<option value="${bill.id}" data-amount="${bill.amount}">${bill.consumer_name} - ₱${parseFloat(bill.amount).toFixed(2)}</option>`;
-                                }
-                            });
-                            $('#bill_id').html(options);
-                        }
+                    success: function (response) {
+
+                        let options = `<option value="">Select Unpaid Bill</option>`;
+
+                        response.data.forEach(bill => {
+                            if (bill.status === 'unpaid') {
+                                options += `
+                                    <option value="${bill.id}" data-amount="${bill.amount}">
+                                        ${bill.consumer_name} - ₱${parseFloat(bill.amount).toFixed(2)}
+                                    </option>
+                                `;
+                            }
+                        });
+
+                        $('#bill_id').html(options);
                     }
                 });
             }
 
-            // Show record payment form
-            $('#recordPaymentBtn').on('click', function() {
+            /* =========================
+               SHOW FORM
+            ========================== */
+            $('#recordPaymentBtn').on('click', function () {
                 loadUnpaidBills();
                 $('#paymentForm')[0].reset();
                 $('#paymentFormContainer').show();
-                $('html, body').animate({ scrollTop: $("#paymentFormContainer").offset().top }, 500);
             });
 
-            // Update amount paid when bill is selected
-            $('#bill_id').on('change', function() {
-                const amount = $(this).find(':selected').data('amount');
-                $('#amount_paid').val(amount);
+            /* =========================
+               AUTO FILL AMOUNT
+            ========================== */
+            $('#bill_id').on('change', function () {
+                let amount = $(this).find(':selected').data('amount');
+                $('#amount_paid').val(amount || '');
             });
 
-            // Cancel form
-            $('#cancelBtn').on('click', function() {
+            /* =========================
+               CANCEL FORM
+            ========================== */
+            $('#cancelBtn').on('click', function () {
                 $('#paymentFormContainer').hide();
             });
 
-            // Submit payment form
-            $('#paymentForm').on('submit', function(e) {
+            /* =========================
+               SUBMIT PAYMENT
+            ========================== */
+            $('#paymentForm').on('submit', function (e) {
                 e.preventDefault();
+
                 $.ajax({
                     url: '../../backend/php/billing.php',
                     type: 'POST',
                     data: $(this).serialize(),
                     dataType: 'json',
-                    success: function(response) {
+                    success: function (response) {
+
+                        alert(response.message);
+
                         if (response.status === 'success') {
-                            alert(response.message);
                             $('#paymentFormContainer').hide();
                             loadPayments();
-                        } else {
-                            alert(response.message);
                         }
                     }
                 });
             });
+
         });
     </script>
 </body>

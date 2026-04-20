@@ -10,24 +10,21 @@
 <body>
     <nav>
         <div class="nav-container">
-            <div class="nav-logo">
-                <img src="../../images/logo/electricity_logo.png" alt="" height="100px" width="100px">
-                <p>Electric MS</p>
-            </div>
-            
+            <div class="nav-logo">Electric MS</div>
             <button class="nav-toggle" id="navToggle">&#9776;</button>
             <ul id="navMenu">
                 <li><a href="dashboard.html">Dashboard</a></li>
                 <li><a href="consumers.html">Consumers</a></li>
                 <li><a href="billing.html">Billing</a></li>
                 <li><a href="payments.html">Payments</a></li>
+                <li><a href="reports.html">Reports</a></li>
                 <li><a href="../../backend/php/auth.php?action=logout">Logout</a></li>
             </ul>
         </div>
     </nav>
 
     <div class="container">
-        <h1>Dashboard, <span style="opacity: .75;">Admin</span></h1>
+        <h1>Dashboard</h1>
         <div class="dashboard-cards">
             <div class="card">
                 <h3>Total Consumers</h3>
@@ -39,7 +36,7 @@
             </div>
             <div class="card">
                 <h3>Total Collections</h3>
-                <div class="value" id="totalCollections">₱0.00</div>
+                <div class="value" id="totalCollections">$0.00</div>
             </div>
         </div>
 
@@ -105,23 +102,24 @@
                     dataType: 'json',
                     success: function(response) {
                         if (response.status === 'success') {
-                            const activitiesTableBody = $('#recentActivitiesTable tbody');
-                            activitiesTableBody.empty();
+                            let activitiesHtml = '';
                             response.data.forEach(bill => {
-                                const activityRow = 
-                                `
+                                activitiesHtml += `
                                     <tr>
                                         <td>Bill for ${bill.consumer_name} - ₱${bill.amount}</td>
-                                        <td>${new Date(bill.due_date).toLocaleDateString()}</td>
-                                        <td>${bill.status.charAt(0).toUpperCase() + bill.status.slice(1)}</td>
+                                        <td>${bill.due_date}</td>
+                                        <td>${bill.status}</td>
                                     </tr>
                                 `;
-                            activitiesTableBody.append(activityRow);
                             });
+                            $('#recentActivitiesTable tbody').html(activitiesHtml);
                         }
                     }
                 });
+                
+
             }
+
             loadDashboardData();
         });
     </script>
