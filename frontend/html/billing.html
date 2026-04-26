@@ -5,9 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Billing - Electric Management System</title>
     <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/theme.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="../js/notification.js" defer></script>
+    <script src="../js/theme.js"></script>
 </head>
+<style>
+    #readingFormContainer {
+    display: none;
+    margin-top: 20px;
+    padding: 20px;
+    background: var(--card-bg);
+    color: var(--text-main);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+}
+</style>
 <body>
+    <!-- NAVIGATION (same as before) -->
     <nav>
         <div class="nav-container">
             <div class="nav-logo">
@@ -24,75 +40,82 @@
                 <li><a href="billing.html">Billing</a></li>
                 <li><a href="payments.html">Payments</a></li>
                 <li><a href="reports.html">Reports</a></li>
-                <li><a href="../../backend/php/auth.php?action=logout">Logout</a></li>
+                <li class="separator">|</li>
+                <li><a href="admin_signup_requests.html" class="request-btn">Check Requests</a></li>
+                <li>|</li>
+                <li><a href="../../backend/php/auth.php?action=logout" class="logout-btn">Logout</a></li>
+                <li style="position:relative;">
+                    <a href="#" id="notifBell">🔔 
+                        <span id="notifCount" style="
+                            background:red;
+                            color:white;
+                            border-radius:50%;
+                            padding:2px 6px;
+                            font-size:12px;
+                            "></span>
+                    </a>
+                    <div id="notifDropdown" style="
+                        display:none;
+                        position:absolute;
+                        right:0;
+                        background:white;
+                        width:300px;
+                        box-shadow:0 0 10px rgba(0,0,0,0.2);
+                        max-height:300px;
+                        overflow:auto;
+                    "></div>
+                </li>
+                <li>
+                    <button id="themeToggle">🌙</button>
+                </li>
             </ul>
         </div>
     </nav>
 
     <div class="container">
         <h1>Billing Management</h1>
-        <button class="btn btn-success" id="addReadingBtn">Add New Reading</button>
+        <button class="btn btn-success" id="addReadingBtn">➕ Add New Reading</button>
 
-        <div class="filter-bar">
-            <input type="text" id="billSearch" placeholder="Search consumer / status / date...">
-        
-            <select id="statusFilter">
+        <!-- 🔥 FIXED Filter bar with Clear button -->
+        <div class="filter-bar" style="margin: 15px 0; display: flex; gap: 10px; flex-wrap: wrap; align-items: end;">
+            <input type="text" id="billSearch" placeholder="🔍 Search consumers..." style="flex:1; padding:10px;">
+            <select id="statusFilter" style="padding:10px;">
                 <option value="">All Status</option>
-                <option value="paid">Paid</option>
-                <option value="unpaid">Unpaid</option>
+                <option value="paid">✅ Paid</option>
+                <option value="unpaid">⏳ Unpaid</option>
+                <option value="due">⚠️ Due</option>
             </select>
-
             <select id="kwhFilter">
                 <option value="">All Usage</option>
                 <option value="high">High Usage</option>
                 <option value="medium">Medium Usage</option>
                 <option value="low">Low Usage</option>
             </select>
-
-            <select id="monthFilter">
+            <select id="monthFilter" style="padding:10px;">
                 <option value="">All Months</option>
-                <option value="01">January</option>
-                <option value="02">February</option>
-                <option value="03">March</option>
-                <option value="04">April</option>
-                <option value="05">May</option>
-                <option value="06">June</option>
-                <option value="07">July</option>
-                <option value="08">August</option>
-                <option value="09">September</option>
-                <option value="10">October</option>
-                <option value="11">November</option>
-                <option value="12">December</option>
+                <!-- Dynamic months populated here -->
             </select>
-            
-            <input type="number" id="yearFilter" placeholder="Year (e.g. 2026)">
-            
-            <select id="sortDate">
-                <option value="">Sort Date</option>
-                <option value="latest">Latest First</option>
-                <option value="oldest">Oldest First</option>
-            </select>
+            <input type="number" id="yearFilter" placeholder="Year" min="2020" max="2030" style="padding:10px; width:100px;">
+            <button class="btn btn-secondary" id="clearFilters" style="padding:10px 15px; white-space:nowrap;">🔄 Clear</button>
         </div>
 
-        <div id="readingFormContainer" style="display: none; margin-top: 20px;">
-            <h2>Add New Reading</h2>
-
+        <!-- Add form (same) -->
+        <div id="readingFormContainer">
+            <h2 id="formTitle">➕ Add New Reading</h2>
             <form id="readingForm">
                 <input type="hidden" name="action" value="add_reading">
-                <label for="consumer_id">Consumer</label>
-                <select id="consumer_id" name="consumer_id" required>
-                    <!-- Consumers will be loaded here via AJAX -->
-                </select>
-                <label for="prev_reading">Previous Reading</label>
-                <input type="number" id="prev_reading" name="prev_reading" step="0.01" required>
-                <label for="curr_reading">Current Reading</label>
-                <input type="number" id="curr_reading" name="curr_reading" step="0.01" required>
-                <label for="reading_date">Reading Date</label>
-                <input type="date" id="reading_date" name="reading_date" required>
-                <label for="due_date">Due Date</label>
-                <input type="date" id="due_date" name="due_date" required>
-                <button type="submit">Generate Bill</button>
-                <button type="button" class="btn btn-danger" id="cancelBtn" style="width: 100%; margin-top: 10px;">Cancel</button>
+                <label>Consumer *</label>
+                <select id="consumer_id" name="consumer_id" required style="width:100%; padding:10px; margin-bottom:15px;"></select>
+                <div style="display:flex; gap:15px;">
+                    <div style="flex:1;"><label>Previous *</label><input type="number" id="prev_reading" name="prev_reading" step="0.01" min="0" required style="width:100%; padding:10px;"></div>
+                    <div style="flex:1;"><label>Current *</label><input type="number" id="curr_reading" name="curr_reading" step="0.01" min="0" required style="width:100%; padding:10px;"></div>
+                </div>
+                <div style="display:flex; gap:15px; margin:15px 0;">
+                    <div style="flex:1;"><label>Reading Date *</label><input type="date" id="reading_date" name="reading_date" required style="width:100%; padding:10px;"></div>
+                    <div style="flex:1;"><label>Due Date *</label><input type="date" id="due_date" name="due_date" required style="width:100%; padding:10px;"></div>
+                </div>
+                <button type="submit" class="btn btn-success" style="width:48%; padding:12px;">💰 Generate Bill</button>
+                <button type="button" class="btn btn-danger" id="cancelBtn" style="width:48%; padding:12px;">❌ Cancel</button>
             </form>
         </div>
 
@@ -101,272 +124,314 @@
                 <thead>
                     <tr>
                         <th>Consumer</th>
-                        <th>Prev Reading</th>
-                        <th>Curr Reading</th>
-                        <th>Kilowatt Hour</th>
+                        <th>Prev</th>
+                        <th>Curr</th>
+                        <th>kWh</th>
                         <th>Amount</th>
-                        <th>Due Date</th>
+                        <th>Due</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <!-- Bills will be loaded here via AJAX -->
-                </tbody>
+                <tbody></tbody>
             </table>
         </div>
     </div>
 
-    <script>
-        $(document).ready(function() {
-            // Mobile Navigation Toggle
-            $('#navToggle').on('click', function() {
-                $('#navMenu').toggleClass('active');
-            });
-            
-            // filter bills
-            function filterBills() {
+<script>
+$(document).ready(function() {
+    $('#navToggle').click(() => $('#navMenu').toggleClass('active'));
+    $('#yearFilter').val(new Date().getFullYear());
 
-                const kwhFilter = $('#kwhFilter').val();
-                const searchValue = $('#billSearch').val().toLowerCase();
-                const statusValue = $('#statusFilter').val().toLowerCase();
-                const monthValue = $('#monthFilter').val();
-                const yearValue = $('#yearFilter').val();
-                const sortValue = $('#sortDate').val();
+    // 🔥 Store all bills for filtering
+    let allBillsData = [];
 
-                let rows = $('#billsTable tbody tr').get();
+    // 🔥 kWh Color coding function
+    function getKwhColor(kwh) {
+        const numKwh = parseFloat(kwh) || 0;
+        if (numKwh >= 500) return '#e74c3c';  // RED - High
+        if (numKwh >= 200) return '#f39c12';  // ORANGE - Medium  
+        if (numKwh >= 50) return '#f1c40f';   // YELLOW - Normal
+        return '#27ae60';                     // GREEN - Low
+    }
 
-                rows.forEach(row => {
+    function isDue(bill) {
+        if (!bill.due_date) return false;
 
-                    const text = $(row).text().toLowerCase();
-                    const status = $(row).find('td:nth-child(7)').text().toLowerCase();
-                    const date = $(row).find('td:nth-child(6)').text(); // due date
+        const today = new Date();
+        const due = new Date(bill.due_date);
 
-                    let d = new Date(date);
-                    let month = ("0" + (d.getMonth() + 1)).slice(-2);
-                    let year = d.getFullYear().toString();
+        return (bill.status === 'unpaid') && (due < today);
+    }
 
-                    let matchSearch = text.includes(searchValue);
-                    let matchStatus = statusValue === "" || status === statusValue;
-                    let matchMonth = monthValue === "" || month === monthValue;
-                    let matchYear = yearValue === "" || year === yearValue;
+    // 🔥 FIXED loadBills with data storage
+    function loadBills() {
+        $.ajax({
+            url: '../../backend/php/billing.php?action=get_all_bills',
+            type: 'GET',
+            dataType: 'json',
+            success: function(response) {
+                console.log('RAW RESPONSE:', response);
 
-                    $(row).toggle(matchSearch && matchStatus && matchMonth && matchYear);
-                });
+                let data = response.data;
 
-                // kWh filtering
-                if (kwhFilter) {
-                    rows.forEach(row => {
-                        const kwhText = $(row).find('td:nth-child(4)').text();
-                        const kwh = parseFloat(kwhText);
-
-                        let show = false;
-                        if (kwhFilter === "high") show = kwh >= 500;
-                        else if (kwhFilter === "medium") show = kwh >= 200 && kwh < 500;
-                        else if (kwhFilter === "low") show = kwh < 200;
-
-                        $(row).toggle(show);
-                    });
-                }
-
-                // sorting
-                if (sortValue) {
-                    let tbody = $('#billsTable tbody');
-
-                    let sorted = rows.sort((a, b) => {
-
-                        let dateA = new Date($(a).find('td:nth-child(6)').text());
-                        let dateB = new Date($(b).find('td:nth-child(6)').text());
-
-                        if (sortValue === "latest") return dateB - dateA;
-                        if (sortValue === "oldest") return dateA - dateB;
-                    });
-
-                    tbody.append(sorted);
-                }
-            }
-            
-
-            // events
-            $('#yearFilter').val(new Date().getFullYear());
-            $('#monthFilter, #yearFilter').on('change', filterBills);
-            $('#billSearch').on('keyup', filterBills);
-            $('#kwhFilter').on('change', filterBills);
-            $('#statusFilter').on('change', filterBills);
-
-            // sort date handler
-            $('#sortDate').on('change', function () {
-                let sortValue = $(this).val();
-
-                let data = $('#billsTable tbody tr').get();
-
-                data.sort((a, b) => {
-
-                    let dateA = new Date($(a).find('td:nth-child(6)').text());
-                    let dateB = new Date($(b).find('td:nth-child(6)').text());
-
-                    if (sortValue === "latest") return dateB - dateA;
-                    if (sortValue === "oldest") return dateA - dateB;
-                    return 0;
-                });
-
-                $('#billsTable tbody').append(data);
-            });
-
-            function loadBills() {
-                $.ajax({
-                    url: '../../backend/php/billing.php?action=get_all_bills',
-                    type: 'GET',
-                    dataType: 'json',
-                    success: function(response) {
-                        if (response.status === 'success') {
-
-                            let data = response.data;
-
-                            // default sort = latest added
-                            data.sort((a, b) => {
-                                let dateA = new Date(a.created_at || a.reading_date || a.due_date);
-                                let dateB = new Date(b.created_at || b.reading_date || b.due_date);
-                                return dateB - dateA;
-                            });
-
-                            renderBills(data);
-                        } else {
-                            alert('Error: ' + response.message);
-                        }
-                    },
-                    error: function(xhr, status, error) {
-                        console.error('AJAX Error: ' + status + ' - ' + error);
-                        $('#billsTable tbody').html(
-                            '<tr><td colspan="8" style="text-align:center; color:red;">Failed to load data.</td></tr>'
-                        );
+                // FORCE PARSE if needed
+                if (typeof data === "string") {
+                    try {
+                        data = JSON.parse(data);
+                    } catch (e) {
+                        data = [];
                     }
-                });
-            }
-
-            function renderBills(data) {
-
-            let rows = '';
-
-            if (data.length === 0) {
-                rows = '<tr><td colspan="8" style="text-align:center;">No bills found.</td></tr>';
-            } else {
-
-                data.forEach(bill => {
-
-                    let kwh = parseFloat(bill.curr_reading) - parseFloat(bill.prev_reading);
-                    if (isNaN(kwh)) kwh = 0;
-
-                    let kwhClass = '';
-                    if (kwh >= 500) kwhClass = 'style="color:red;font-weight:bold;"';
-                    else if (kwh >= 200) kwhClass = 'style="color:orange;"';
-
-                    rows += `
-                        <tr>
-                            <td>${bill.consumer_name}</td>
-                            <td>${bill.prev_reading}</td>
-                            <td>${bill.curr_reading}</td>
-                            <td ${kwhClass}>${kwh.toFixed(2)} kWh</td>
-                            <td>₱${parseFloat(bill.amount).toFixed(2)}</td>
-                            <td>${bill.due_date}</td>
-                            <td>${bill.status}</td>
-                            <td>
-                                <button 
-                                    class="btn btn-primary viewBillBtn"
-                                    data-id="${bill.id}"
-                                    ${bill.status.toLowerCase() !== 'paid' ? 'disabled' : ''}>
-                                    View Receipt
-                                </button>
-                            </td>
-                        </tr>
-                    `;
-                });
-            }
-
-            $('#billsTable tbody').html(rows);
-            }
-
-            loadBills();
-
-            // Load consumers for the dropdown
-            function loadConsumersForDropdown() {
-                $.ajax({
-                    url: '../../backend/php/consumers.php?action=get_all',
-                    type: 'GET',
-                    dataType: 'json',
-                    success: function(response) {
-                        if (response.status === 'success') {
-                            let options = '<option value="">Select Consumer</option>';
-                            response.data.forEach(consumer => {
-                                options += `<option value="${consumer.id}">${consumer.name} (${consumer.meter_no})</option>`;
-                            });
-                            $('#consumer_id').html(options);
-                        }
-                    }
-                });
-            }
-
-            // Show add reading form
-            $('#addReadingBtn').on('click', function() {
-                loadConsumersForDropdown();
-                $('#readingForm')[0].reset();
-                $('#readingFormContainer').show();
-                $('html, body').animate({ scrollTop: $("#readingFormContainer").offset().top }, 500);
-            });
-
-            // Cancel form
-            $('#cancelBtn').on('click', function() {
-                $('#readingFormContainer').hide();
-            });
-
-            // View bill details (Open Receipt)
-            $(document).on('click', '.viewBillBtn', function() {
-                const id = $(this).data('id');
-                window.open(`receipt.html?id=${id}`, '_blank');
-            });
-
-            // Submit reading form
-            $('#readingForm').on('submit', function(e) {
-                e.preventDefault();
-
-                // prevent negative readings
-                let prev = parseFloat($('#prev_reading').val());
-                let curr = parseFloat($('#curr_reading').val());
-
-                if (curr < prev) {
-                    alert("Current reading cannot be lower than previous reading.");
-                    return;
                 }
 
-                $.ajax({
-                    url: '../../backend/php/billing.php',
-                    type: 'POST',
-                    data: $(this).serialize(),
-                    dataType: 'json',
-                    success: function(response) {
-                        if (response.status === 'success') {
-                            alert(response.message);
-                            $('#readingFormContainer').hide();
-                            loadBills();
-                        } else {
-                            alert(response.message);
-                        }
-                    }
-                });
-            });
-
-            $('#curr_reading').on('input', function() {
-                let prev = parseFloat($('#prev_reading').val());
-                let curr = parseFloat($(this).val());
-
-                if (curr < prev) {
-                    $(this).css('border', '2px solid red');
-                } else {
-                    $(this).css('border', '');
+                if (!Array.isArray(data)) {
+                    data = [];
                 }
-            });
 
+                allBillsData = data;
+
+                console.log("CLEAN DATA:", allBillsData);
+
+                populateMonthFilter();
+                applyFilters();
+                
+            },
+            error: function(xhr, status, error) {
+                console.error('Load error:', error);
+                $('#billsTable tbody').html('<tr><td colspan="8" style="color:red; text-align:center; padding:20px;">Failed to load bills</td></tr>');
+            }
         });
-    </script>
+    }
+
+    // 🔥 Populate months from data
+    function populateMonthFilter() {
+
+    const months = [
+        { value: '01', name: 'January' },
+        { value: '02', name: 'February' },
+        { value: '03', name: 'March' },
+        { value: '04', name: 'April' },
+        { value: '05', name: 'May' },
+        { value: '06', name: 'June' },
+        { value: '07', name: 'July' },
+        { value: '08', name: 'August' },
+        { value: '09', name: 'September' },
+        { value: '10', name: 'October' },
+        { value: '11', name: 'November' },
+        { value: '12', name: 'December' }
+    ];
+
+    let options = '<option value="">All Months</option>';
+
+    months.forEach(m => {
+        options += `<option value="${m.value}">${m.name}</option>`;
+    });
+
+    $('#monthFilter').html(options);
+    }
+
+    // 🔥 FIXED renderBills with data attributes
+    function renderBills(data) {
+        if (!data?.length) {
+            $('#billsTable tbody').html('<tr><td colspan="8" style="text-align:center; padding:20px;">No bills match filters</td></tr>');
+            return;
+        }
+
+        let html = '';
+        data.forEach(bill => {
+            const kwh = (parseFloat(bill.curr_reading || 0) - parseFloat(bill.prev_reading || 0)).toFixed(2);
+            let status = (bill.status || 'unpaid').toLowerCase();
+            const kwhColor = getKwhColor(kwh);
+
+            // 🔥 override if overdue
+            if (isDue(bill)) {
+                status = 'due';
+            }
+
+            // ✅ PROPER COLOR SYSTEM
+            let statusColor = '#e74c3c'; // unpaid default
+
+            if (status === 'paid') {
+                statusColor = '#27ae60';
+            } else if (status === 'due') {
+                statusColor = '#c0392b'; // darker red for due
+            }
+
+            const isPaid = status === 'paid';
+
+            const readingDate = bill.reading_date 
+                ? new Date(bill.reading_date + "T00:00:00") 
+                : new Date();
+
+            const month = (readingDate.getMonth() + 1).toString().padStart(2, '0');
+            const year = readingDate.getFullYear();
+
+            html += `
+                <tr data-consumer="${(bill.consumer_name || '').toLowerCase()}"
+                    data-status="${status}"
+                    data-month="${month}"
+                    data-year="${year}"
+                    data-kwh="${kwh}">
+                    <td>${bill.consumer_name || 'N/A'}</td>
+                    <td>${bill.prev_reading || 0}</td>
+                    <td>${bill.curr_reading || 0}</td>
+                    <td style="color:${kwhColor}; font-weight:bold;">${kwh} kWh</td>
+                    <td>₱${parseFloat(bill.amount || 0).toFixed(2)}</td>
+                    <td>${bill.due_date || ''}</td>
+                    <td style="color:${statusColor}; font-weight: bold;">
+                        ${status.toUpperCase()}
+                    </td>
+                    <td>
+                        ${isPaid ? `
+                            <button class="btn btn-primary viewBillBtn" data-id="${bill.id}">
+                                📄 Receipt
+                            </button>
+                        ` : `
+                            <button class="btn btn-warning" disabled style="opacity:0.6;">
+                                ⏳ Pay First
+                            </button>
+                        `}
+                    </td>
+                </tr>
+            `;
+        });
+
+        $('#billsTable tbody').html(html);
+    }
+
+
+    // 🔥 FIXED Filtering system
+    function applyFilters() {
+        const search = ($('#billSearch').val() || '').toLowerCase();
+        const statusFilter = ($('#statusFilter').val() || '').toLowerCase();
+        const monthFilter = $('#monthFilter').val();
+        const yearFilter = $('#yearFilter').val();
+
+        let filteredData = allBillsData.filter(bill => {
+
+            const consumerName = (bill.consumer_name || '').toLowerCase();
+
+            // 🔥 FIX: compute real status (with due)
+            let status = (bill.status || 'unpaid').toLowerCase();
+
+            if (isDue(bill)) {
+                status = 'due';
+            }
+
+            const consumerMatch = consumerName.includes(search);
+
+            const statusMatch =
+                !statusFilter ||
+                status === statusFilter;
+
+            // DATE FILTER
+            let monthMatch = true;
+            let yearMatch = true;
+
+            if (bill.due_date) {
+                const date = new Date(bill.due_date);
+
+                if (!isNaN(date.getTime())) {
+                    const billMonth = String(date.getMonth() + 1).padStart(2, '0');
+                    const billYear = String(date.getFullYear());
+
+                    if (monthFilter) monthMatch = billMonth === monthFilter;
+                    if (yearFilter) yearMatch = billYear === String(yearFilter);
+                }
+            }
+
+            // KWH FILTER
+            const prev = parseFloat(bill.prev_reading);
+            const curr = parseFloat(bill.curr_reading);
+
+            let kwh = 0;
+
+
+            if (!isNaN(prev) && !isNaN(curr)) {
+                kwh = parseFloat((curr - prev).toFixed(2));
+            }
+            const kwhFilterValue = $('#kwhFilter').val();
+
+            let kwhMatch = true;
+
+            if (kwhFilterValue === 'high') {
+                kwhMatch = kwh >= 500;
+            } else if (kwhFilterValue === 'medium') {
+                kwhMatch = kwh >= 200 && kwh < 500;
+            } else if (kwhFilterValue === 'low') {
+                kwhMatch = kwh < 200;
+            }
+
+            return consumerMatch && statusMatch && monthMatch && yearMatch && kwhMatch;
+        });
+
+        renderBills(filteredData);
+    }
+
+    // 🔥 FIXED Filter events
+    $('#billSearch').on('input', applyFilters);
+    $('#statusFilter').on('change', applyFilters);
+    $('#monthFilter').on('change', applyFilters);
+    $('#yearFilter').on('input', applyFilters);
+    $('#kwhFilter').on('change', applyFilters);
+
+    // 🔥 Clear filters
+    $('#clearFilters').click(function() {
+        $('#billSearch').val('');
+        $('#statusFilter').val('');
+        $('#monthFilter').val('');
+        $('#yearFilter').val(new Date().getFullYear());
+        applyFilters();
+    });
+
+    // EXACT SAME RECEIPT HANDLER AS CUSTOMER DASHBOARD
+    $(document).on('click', '.viewBillBtn', function(e) {
+        e.preventDefault();
+        const billId = $(this).data('id');
+        console.log('Receipt clicked:', billId);
+        if (!billId) {
+            alert('❌ Invalid bill ID');
+            return;
+        }
+        window.open(`receipt.html?id=${billId}`, '_blank', 'width=800,height=1000');
+    });
+
+    // Add form (unchanged)
+    $('#addReadingBtn').click(() => {
+        $.get('../../backend/php/consumers.php?action=get_all').done(res => {
+            if (res.status === 'success') {
+                let options = '<option value="">Select...</option>';
+                res.data.forEach(c => options += `<option value="${c.id}">${c.name} (${c.meter_no})</option>`);
+                $('#consumer_id').html(options);
+            }
+        });
+        $('#readingForm')[0].reset();
+        $('#reading_date').val(new Date().toISOString().split('T')[0]);
+        $('#due_date').val(new Date(Date.now() + 30*24*60*60*1000).toISOString().split('T')[0]);
+        $('#readingFormContainer').show();
+    });
+
+    
+    $('#readingForm').submit(e => {
+        e.preventDefault();
+        $.post('../../backend/php/billing.php', $('#readingForm').serialize())
+        .done(res => {
+            if (res.status === 'success') {
+                alert('✅ ' + res.message);
+                $('#readingFormContainer').hide();
+                loadBills();
+            } else alert('❌ ' + res.message);
+        }).fail(() => alert('❌ Network error'));
+    });
+
+    $('#cancelBtn').click(() => $('#readingFormContainer').hide());
+
+    // Initial load
+    loadBills();
+    if (typeof initNotifications === 'function') initNotifications();
+});
+</script>
+
+
 </body>
 </html>

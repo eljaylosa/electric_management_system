@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SignUp Request</title>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<style>
+  :root {
+    --bg-main: radial-gradient(circle at top left, #1e3a8a, #020617);
+    --card-bg: rgba(255,255,255,0.08);
+    --text-main: white;
+    --text-sub: #94a3b8;
+    --input-bg: rgba(255,255,255,0.1);
+    --btn-gradient: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+
+/* LIGHT MODE */
+[data-theme="light"] {
+    --bg-main: linear-gradient(135deg, #e2e8f0, #f8fafc);
+    --card-bg: rgba(255,255,255,0.9);
+    --text-main: #1e293b;
+    --text-sub: #64748b;
+    --input-bg: #f1f5f9;
+    --btn-gradient: linear-gradient(135deg, #2563eb, #1d4ed8);
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg-main);
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0;
+    color: var(--text-main);
+    overflow: hidden;
+}
+
+/* glow (disabled in light) */
+body::before,
+body::after {
+    content: "";
+    position: absolute;
+    width: 350px;
+    height: 350px;
+    filter: blur(120px);
+    opacity: 0.3;
+}
+
+body::before {
+    background: #3b82f6;
+    top: -100px;
+    left: -100px;
+}
+
+body::after {
+    background: #22c55e;
+    bottom: -100px;
+    right: -100px;
+}
+
+[data-theme="light"] body::before,
+[data-theme="light"] body::after {
+    display: none;
+}
+[data-theme="light"] #signupForm select option {
+    background: white;
+    color: black;
+}
+
+[data-theme="dark"] #signupForm select option {
+    background: #1e293b;
+    color: white;
+}
+
+/* CARD */
+#signupForm {
+    text-align: center;
+    position: relative;
+    background: var(--card-bg);
+    backdrop-filter: blur(20px);
+    padding: 35px;
+    width: 100%;
+    max-width: 380px;
+    border-radius: 18px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+}
+
+/* LOGO */
+.logo {
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.logo h1 {
+    margin: 0;
+}
+
+.logo span {
+    font-size: 0.8rem;
+    color: var(--text-sub);
+}
+
+/* INPUTS */
+#signupForm input {
+    width: 100%;
+    padding: 12px;
+    margin: 8px 0;
+    border-radius: 10px;
+    border: none;
+    background: var(--input-bg);
+    color: var(--text-main);
+}
+
+#signupForm input::placeholder {
+    color: var(--text-sub);
+}
+
+#signupForm select {
+    width: 100%;
+    padding: 12px;
+    margin: 8px 0;
+    border-radius: 10px;
+    border: none;
+    background: var(--input-bg);
+    color: var(--text-main);
+
+    /* IMPORTANT FIX */
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+}
+
+/* Dropdown options fix */
+#signupForm select option {
+    background: #ffffff;
+    color: #111827;
+}
+
+/* BUTTON */
+#signupForm button {
+    width: 100%;
+    padding: 12px;
+    margin-top: 12px;
+    border: none;
+    border-radius: 10px;
+    background: var(--btn-gradient);
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+/* LINKS */
+a {
+    color: #60a5fa;
+}
+
+/* TOGGLE BUTTON */
+.theme-toggle {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.1);
+}
+  </style>
+<body>
+
+  <form id="signupForm">
+    <div class="theme-toggle" id="themeToggle">🌙 Dark</div>
+    <div class="logo">
+        <h1>⚡ Electric MS</h1>
+        <span>Consumer Registration Request</span>
+    </div>
+    <h2>Consumer Request Form</h2>
+
+    <input type="text" name="name" placeholder="Full Name" required>
+    <input type="text" name="address" placeholder="Address" required>
+    <input type="text" name="contact" placeholder="Contact">
+    <input type="email" name="email" placeholder="Email" required>
+
+    <select name="category_id" id="category_id" required>
+        <option value="">Loading categories...</option>
+    </select>
+
+    
+
+    <button type="submit">Submit Request</button>
+    <p><a href="login.html"><- Back to login</a></p>
+
+</form>
+
+<script>
+    // load saved theme
+    if (localStorage.getItem("theme") === "light") {
+        document.documentElement.setAttribute("data-theme", "light");
+        $('#themeToggle').text('☀️ Light');
+    }
+
+    // toggle
+    $('#themeToggle').click(function () {
+        let current = document.documentElement.getAttribute("data-theme");
+
+        if (current === "light") {
+            document.documentElement.removeAttribute("data-theme");
+            localStorage.setItem("theme", "dark");
+            $(this).text('🌙 Dark');
+        } else {
+            document.documentElement.setAttribute("data-theme", "light");
+            localStorage.setItem("theme", "light");
+            $(this).text('☀️ Light');
+        }
+    });
+
+    function loadCategories() {
+        $.ajax({
+            url: '../../backend/php/categories.php?action=get_all',
+            type: 'GET',
+            dataType: 'json',
+            success: function(res) {
+
+                if (res.status === 'success' && res.data.length > 0) {
+
+                    let options = '<option value="">Select Category</option>';
+
+                    res.data.forEach(cat => {
+                        options += `<option value="${cat.id}">${cat.name}</option>`;
+                    });
+
+                    $('#category_id').html(options);
+
+                } else {
+                    $('#category_id').html('<option value="">No categories found</option>');
+                }
+            },
+            error: function () {
+                $('#category_id').html('<option value="">Failed to load categories</option>');
+            }
+        });
+    }
+  $('#signupForm').on('submit', function(e){
+    e.preventDefault();
+
+    let btn = $('#signupForm button');
+    btn.text('Submitting...').prop('disabled', true);
+
+    $.post('../../backend/php/signup_request.php', $(this).serialize(), function(res){
+
+        alert(res.message);
+
+        if(res.status === "success"){
+            $('#signupForm')[0].reset();
+        }
+
+        btn.text('Submit Request').prop('disabled', false);
+
+    }, 'json');
+});
+$(document).ready(function () {
+    loadCategories();
+});
+</script>
+</body>
+</html>

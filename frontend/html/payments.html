@@ -4,11 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Payments - Electric Management System</title>
-
 <link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="../css/theme.css">
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="../js/notification.js" defer></script>
+<script src="../js/theme.js"></script>
 </head>
-
 <body>
 
 <nav>
@@ -27,7 +28,34 @@
             <li><a href="billing.html">Billing</a></li>
             <li><a href="payments.html">Payments</a></li>
             <li><a href="reports.html">Reports</a></li>
-            <li><a href="../../backend/php/auth.php?action=logout">Logout</a></li>
+            <li class="separator">|</li>
+                <li><a href="admin_signup_requests.html" class="request-btn">Check Requests</a></li>
+                <li>|</li>
+                <li><a href="../../backend/php/auth.php?action=logout" class="logout-btn">Logout</a></li>
+                <li style="position:relative;">
+                    <a href="#" id="notifBell">🔔 
+                        <span id="notifCount" style="
+                            background:red;
+                            color:white;
+                            border-radius:50%;
+                            padding:2px 6px;
+                            font-size:12px;
+                            "></span>
+                    </a>
+                    <div id="notifDropdown" style="
+                        display:none;
+                        position:absolute;
+                        right:0;
+                        background:white;
+                        width:300px;
+                        box-shadow:0 0 10px rgba(0,0,0,0.2);
+                        max-height:300px;
+                        overflow:auto;
+                    "></div>
+                </li>
+                <li>
+                    <button id="themeToggle">🌙</button>
+                </li>
         </ul>
     </div>
 </nav>
@@ -160,7 +188,7 @@ $(document).ready(function(){
                         <!-- NEW -->
                         <td>
                             <button class="btn btn-primary printBtn" data-bill="${p.bill_id}">
-                                Print Receipt
+                                📄 Print Receipt
                             </button>
                         </td>
                     </tr>
@@ -172,14 +200,25 @@ $(document).ready(function(){
     }
 
     // click event for print button
-    $(document).on('click', '.printBtn', function(){
+    $('#paymentsTable tbody')
+        .off('click.print')
+        .on('click.print', '.printBtn', function () {
 
-        let billId = $(this).data('bill');
+            let billId = $(this).data('bill');
 
-        // open receipt page
-        window.open(`receipt.html?id=${billId}`, '_blank');
+            if (!billId) {
+                alert('Invalid bill ID');
+                return;
+            }
 
-    });
+            console.log('Printing receipt for bill:', billId);
+
+            window.open(
+                `receipt.html?id=${billId}`,
+                '_blank',
+                'width=800,height=1000'
+            );
+        });
 
     /* ================= FILTER ================= */
     function filterPayments(){
@@ -298,10 +337,9 @@ $(document).ready(function(){
 
         }, 'json');
     });
-
+    initNotifications();
     loadPayments();
 });
 </script>
-
 </body>
 </html>

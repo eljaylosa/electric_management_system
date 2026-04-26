@@ -5,7 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Electric Management System</title>
     <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/theme.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="../js/notification.js"></script>
+    <script src="../js/theme.js"></script>
 </head>
 <body>
     <nav>
@@ -24,7 +27,34 @@
                 <li><a href="billing.html">Billing</a></li>
                 <li><a href="payments.html">Payments</a></li>
                 <li><a href="reports.html">Reports</a></li>
-                <li><a href="../../backend/php/auth.php?action=logout">Logout</a></li>
+                <li class="separator">|</li>
+                <li><a href="admin_signup_requests.html" class="request-btn">Check Requests</a></li>
+                <li>|</li>
+                <li><a href="../../backend/php/auth.php?action=logout" class="logout-btn">Logout</a></li>
+                <li style="position:relative;">
+                    <a href="#" id="notifBell">🔔 
+                        <span id="notifCount" style="
+                            background:red;
+                            color:white;
+                            border-radius:50%;
+                            padding:2px 6px;
+                            font-size:12px;
+                            "></span>
+                    </a>
+                    <div id="notifDropdown" style="
+                        display:none;
+                        position:absolute;
+                        right:0;
+                        background:white;
+                        width:300px;
+                        box-shadow:0 0 10px rgba(0,0,0,0.2);
+                        max-height:300px;
+                        overflow:auto;
+                    "></div>
+                </li>
+                <li>
+                    <button id="themeToggle">🌙</button>
+                </li>
             </ul>
         </div>
     </nav>
@@ -42,7 +72,11 @@
             </div>
             <div class="card">
                 <h3>Total Collections</h3>
-                <div class="value" id="totalCollections">$0.00</div>
+                <div class="value" id="totalCollections">₱0.00</div>
+            </div>
+            <div class="card" style="background-color: rgba(200, 17, 17, 0.705);">
+                <h3 style="color: white;">Due Consumers</h3>
+                <div class="value" id="totalDueConsumers" style="color: white;">0</div>
             </div>
         </div>
 
@@ -63,12 +97,24 @@
         </div>
     </div>
 
+    
+
     <script>
         $(document).ready(function() {
             // Mobile Navigation Toggle
             $('#navToggle').on('click', function() {
                 $('#navMenu').toggleClass('active');
             });
+
+            // check if due 
+            function isDue(bill) {
+                if (!bill.due_date) return false;
+
+                const today = new Date();
+                const dueDate = new Date(bill.due_date);
+
+                return bill.status !== 'paid' && dueDate < today;
+            }
 
             // Load dashboard data
             function loadDashboardData() {
@@ -101,36 +147,74 @@
                     }
                 });
 
+                // get due consumers (consumers with unpaid bills past due date)
+                $.ajax({
+                    url: '../../backend/php/billing.php?action=get_all_bills',
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.status === 'success') {
+
+                            let dueCount = response.data.filter(bill => isDue(bill)).length;
+
+                            $('#totalDueConsumers').text(dueCount);
+                        }
+                    }
+                });
+
                 // load recent activities (for simplicity, we will just show recent bills)
                 // load also when a user pay bills on their customer dashboard, so we can show that activity here in real time
                 // fix "paid" color should be green and "unpaid" color should be red, also make the status text bold
-                    $.ajax({
-                        url: '../../backend/php/billing.php?action=get_all_bills',
-                        type: 'GET',
-                        dataType: 'json',
-                        success: function(response) {
-                            if (response.status === 'success') {
-                                let rows = '';
-                                // show only the 5 most recent bills
-                                let recentBills = response.data.slice(-5).reverse();
-                                recentBills.forEach(bill => {
-                                    rows += `
-                                        <tr>
-                                            <td>${bill.consumer_name} - ₱${bill.amount}</td>
-                                            <td>${bill.due_date}</td>
-                                            <td style="color: ${bill.status === 'paid' ? '#2ecc71' : '#e74c3c'}; font-weight: bold;">${bill.status.toUpperCase()}</td>
-                                        </tr>
-                                    `;
-                                });
-                                $('#recentActivitiesTable tbody').html(rows);
-                            }
+                $.ajax({
+                    url: '../../backend/php/billing.php?action=get_all_bills',
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.status === 'success') {
+
+                            let rows = '';
+
+                            // sort latest
+                            let sorted = response.data.sort(
+                                (a, b) => new Date(b.created_at || b.due_date) - new Date(a.created_at || a.due_date)
+                            );
+
+                            let recentBills = sorted.slice(0, 5);
+
+                            recentBills.forEach(bill => {
+
+                                // 🔥 FIXED STATUS LOGIC
+                                let status = (bill.status || 'unpaid').toLowerCase();
+
+                                if (isDue(bill)) {
+                                    status = 'due';
+                                }
+
+                                let color =
+                                    status === 'paid' ? '#2ecc71' :
+                                    status === 'due' ? '#c0392b' :
+                                    '#e74c3c';
+
+                                rows += `
+                                    <tr>
+                                        <td>${bill.consumer_name} - ₱${parseFloat(bill.amount).toFixed(2)}</td>
+                                        <td>${bill.due_date}</td>
+                                        <td style="color:${color}; font-weight:bold;">
+                                            ${status.toUpperCase()}
+                                        </td>
+                                    </tr>
+                                `;
+                            });
+
+                            $('#recentActivitiesTable tbody').html(rows);
                         }
-                    });
+                    }
+                });
                 
                 
 
             }
-
+            initNotifications();
             loadDashboardData();
         });
     </script>

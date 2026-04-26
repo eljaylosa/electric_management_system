@@ -1,0 +1,62 @@
+:root {
+  --bg: #f8fafc;
+  --card: #ffffff;
+  --text: #1e293b;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --nav: #2563eb;
+  --hover-row: #f1f5f9;
+  --input-bg: #fff;
+  
+}
+
+/* DARK MODE */
+[data-theme="dark"] {
+  --bg: #0f172a;
+  --card: #1e293b;
+  --text: #f1f5f9;
+  --muted: #94a3b8;
+  --border: #334155;
+  --nav: #1e3a8a;
+  --input-bg: #1e1e1e;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  transition: 0.3s ease;
+}
+
+.container {
+  background: var(--card);
+  transition: 0.3s ease;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  transition: 0.3s ease;
+}
+
+table {
+  background: var(--card);
+  color: var(--text);
+}
+
+table th {
+  background: var(--bg);
+  color: var(--muted);
+}
+
+nav {
+  background: var(--nav);
+}
+
+#themeToggle {
+  background: rgba(255,255,255,0.2);
+  border:none;
+  color:white;
+  padding:6px 10px;
+  border-radius:8px;
+ cursor:pointer;
+}

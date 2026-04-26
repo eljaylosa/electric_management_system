@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rates Trash Bin</title>
+
+<link rel="stylesheet" href="../css/style.css">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<style>
+body {
+    font-family: Arial;
+}
+
+.container {
+    padding: 20px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    margin-top: 20px;
+}
+
+th, td {
+    padding: 12px;
+    border-bottom: 1px solid #eee;
+}
+
+th {
+    background: #111827;
+    color: white;
+}
+
+button {
+    padding: 6px 10px;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.restoreBtn {
+    background: #22c55e;
+    color: white;
+}
+
+.forceDeleteBtn {
+    background: #ef4444;
+    color: white;
+}
+
+#confirmBox {
+    display:none;
+    position: fixed;
+    top: 30%;
+    left: 50%;
+    transform: translate(-50%, -30%);
+    background: white;
+    padding: 20px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.2);
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>🗑️ Rates Trash Bin</h1>
+
+<table>
+    <thead>
+        <tr>
+            <th>Category</th>
+            <th>Rate</th>
+            <th>Deleted At</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+
+    <tbody id="trashTable"></tbody>
+</table>
+
+</div>
+
+<!-- 🔐 PASSWORD MODAL -->
+<div id="confirmBox">
+    <h3>Enter Admin Password</h3>
+    <input type="password" id="adminPass" placeholder="Password">
+    <br><br>
+    <button id="confirmAction">Confirm</button>
+    <button onclick="$('#confirmBox').hide()">Cancel</button>
+</div>
+
+<script>
+$(document).ready(function(){
+
+    let selectedId = null;
+    let selectedAction = null;
+
+    /* ================= LOAD TRASH ================= */
+    function loadTrash(){
+
+        $.get('../../backend/php/rates.php?action=get_deleted', function(res){
+
+            let rows = '';
+
+            if(!res.data || res.data.length === 0){
+                rows = `<tr><td colspan="4" style="text-align:center;">Trash is empty</td></tr>`;
+                $('#trashTable').html(rows);
+                return;
+            }
+
+            res.data.forEach(item => {
+
+                rows += `
+                    <tr>
+                        <td>${item.name}</td>
+                        <td>₱${parseFloat(item.rate_per_kwh).toFixed(4)}</td>
+                        <td>${item.deleted_at}</td>
+                        <td>
+                            <button class="restoreBtn" data-id="${item.id}">♻ Restore</button>
+                            <button class="forceDeleteBtn" data-id="${item.id}">🔥 Delete</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            $('#trashTable').html(rows);
+
+        }, 'json');
+    }
+
+    loadTrash();
+
+    /* ================= RESTORE ================= */
+    $(document).on('click', '.restoreBtn', function(){
+        selectedId = $(this).data('id');
+        selectedAction = 'restore';
+        $('#adminPass').val('');
+        $('#confirmBox').show();
+    });
+
+    /* ================= FORCE DELETE ================= */
+    $(document).on('click', '.forceDeleteBtn', function(){
+
+        if(!confirm("Permanently delete this rate? This cannot be undone.")) return;
+
+        selectedId = $(this).data('id');
+        selectedAction = 'force_delete';
+        $('#adminPass').val('');
+        $('#confirmBox').show();
+    });
+
+    /* ================= CONFIRM ACTION ================= */
+    $('#confirmAction').click(function(){
+
+        let pass = $('#adminPass').val().trim();
+
+        if(!pass){
+            alert("Enter password");
+            return;
+        }
+
+        $.post('../../backend/php/rates.php', {
+            action: selectedAction,
+            id: selectedId,
+            password: pass
+        }, function(res){
+
+            alert(res.message);
+
+            if(res.status === 'success'){
+                $('#confirmBox').hide();
+                loadTrash();
+            }
+
+        }, 'json');
+
+    });
+
+});
+</script>
+
+</body>
+</html>

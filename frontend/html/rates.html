@@ -4,10 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Manage Tariffs</title>
-
+<script src="../js/notification.js"></script>
 <link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="../css/theme.css">
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
+<script src="../js/notification.js"></script>
+<script src="../js/theme.js"></script>
 <style>
 .container {
     padding: 20px;
@@ -70,6 +72,74 @@ th {
     background: #22c55e;
     color: white;
 }
+
+/* ================= MODAL ================= */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.6);
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.modal-box {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    width: 320px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.modal-box h2 {
+    margin-bottom: 10px;
+}
+
+.modal-box input {
+    width: 100%;
+    padding: 10px;
+    margin: 15px 0;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-danger {
+    flex: 1;
+    background: #ef4444;
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.btn-cancel {
+    flex: 1;
+    background: #6b7280;
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.btn-danger:hover {
+    background: #dc2626;
+}
+
+.btn-cancel:hover {
+    background: #4b5563;
+}
 </style>
 </head>
 
@@ -91,7 +161,34 @@ th {
                 <li><a href="billing.html">Billing</a></li>
                 <li><a href="payments.html">Payments</a></li>
                 <li><a href="reports.html">Reports</a></li>
-                <li><a href="../../backend/php/auth.php?action=logout">Logout</a></li>
+                <li class="separator">|</li>
+                <li><a href="admin_signup_requests.html" class="request-btn">Check Requests</a></li>
+                <li>|</li>
+                <li><a href="../../backend/php/auth.php?action=logout" class="logout-btn">Logout</a></li>
+                <li style="position:relative;">
+                    <a href="#" id="notifBell">🔔 
+                        <span id="notifCount" style="
+                            background:red;
+                            color:white;
+                            border-radius:50%;
+                            padding:2px 6px;
+                            font-size:12px;
+                            "></span>
+                    </a>
+                    <div id="notifDropdown" style="
+                        display:none;
+                        position:absolute;
+                        right:0;
+                        background:white;
+                        width:300px;
+                        box-shadow:0 0 10px rgba(0,0,0,0.2);
+                        max-height:300px;
+                        overflow:auto;
+                    "></div>
+                </li>
+                <li>
+                    <button id="themeToggle">🌙</button>
+                </li>
             </ul>
     </div>
 </nav>
@@ -105,6 +202,8 @@ th {
         <input type="text" id="newCategory" placeholder="Category Name">
         <input type="number" id="newRate" placeholder="Rate per kWh" step="0.0001">
         <button class="btn btn-add" id="addRateBtn">Add</button>
+        <a href="rates_trash.html"><button class="btn">🗑 Rates Trash</button></a>
+
     </div>
 
     <!-- TABLE -->
@@ -124,96 +223,163 @@ th {
 
 </div>
 
+<!-- ================= DELETE MODAL ================= -->
+<div id="deleteModal" class="modal-overlay">
+    <div class="modal-box">
+        <h2>🔐 Admin Verification</h2>
+        <p>Enter password to confirm deletion</p>
+
+        <input type="password" id="deletePassword" placeholder="Enter admin password">
+
+        <div class="modal-actions">
+            <button id="confirmDelete" class="btn-danger">Confirm</button>
+            <button id="cancelDelete" class="btn-cancel">Cancel</button>
+        </div>
+    </div>
+</div>
+
 <script>
-$(document).ready(function(){
+    $(document).ready(function(){
     
-    $('#navToggle').click(function(){
-        $('#navMenu').toggleClass('active');
-    });
-
-
-    /* ================= LOAD RATES ================= */
-    function loadRates() {
-        $.get('../../backend/php/rates.php?action=get_all', function(res) {
-
-            let rows = '';
-
-            res.data.forEach(rate => {
-                rows += `
-                    <tr>
-                        <td>${rate.name}</td>
-                        <td>₱${parseFloat(rate.rate_per_kwh).toFixed(4)}</td>
-                        <td>
-                            <button class="btn btn-edit editBtn"
-                                data-id="${rate.id}"
-                                data-rate="${rate.rate_per_kwh}">
-                                Edit
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            });
-
-            $('#ratesTable').html(rows);
-
-        }, 'json');
-    }
-
-    loadRates();
-
-    /* ================= EDIT RATE ================= */
-    $(document).on('click', '.editBtn', function(){
-
-        let id = $(this).data('id');
-        let current = $(this).data('rate');
-
-        let newRate = prompt("Enter new rate per kWh:", current);
-
-        if(!newRate) return;
-
-        $.post('../../backend/php/rates.php', {
-            action: 'update_rate',
-            id: id,
-            rate: newRate
-        }, function(res){
-
-            alert(res.message);
-            loadRates();
-
-        }, 'json');
-
-    });
-
-    /* ================= ADD CATEGORY ================= */
-    $('#addRateBtn').click(function(){
-
-        let name = $('#newCategory').val();
-        let rate = $('#newRate').val();
-
-        if(!name || !rate){
-            alert("Fill all fields");
-            return;
+        $('#navToggle').click(function(){
+            $('#navMenu').toggleClass('active');
+        });
+    
+        let deleteId = null;
+    
+        /* ================= LOAD RATES ================= */
+        function loadRates() {
+            $.get('../../backend/php/rates.php?action=get_all', function(res) {
+    
+                if(res.status !== 'success') return;
+    
+                let rows = '';
+    
+                res.data.forEach(rate => {
+                    rows += `
+                        <tr>
+                            <td>${rate.name}</td>
+                            <td>₱${parseFloat(rate.rate_per_kwh).toFixed(4)}</td>
+                            <td>
+                                <button class="btn btn-edit editBtn"
+                                    data-id="${rate.id}"
+                                    data-rate="${rate.rate_per_kwh}">
+                                    Edit
+                                </button>
+    
+                                <button class="btn btn-danger deleteBtn"
+                                    data-id="${rate.id}">
+                                    Delete
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+    
+                $('#ratesTable').html(rows);
+    
+            }, 'json');
         }
+    
+        loadRates();
+    
+        /* ================= EDIT RATE ================= */
+        $(document).on('click', '.editBtn', function(){
+    
+            let id = $(this).data('id');
+            let current = $(this).data('rate');
+    
+            let newRate = prompt("Enter new rate per kWh:", current);
+    
+            if(!newRate) return;
+    
+            $.post('../../backend/php/rates.php', {
+                action: 'update_rate',
+                id: id,
+                rate: newRate
+            }, function(res){
+                alert(res.message);
+                loadRates();
+            }, 'json');
+    
+        });
+    
+        /* ================= ADD CATEGORY ================= */
+        $('#addRateBtn').click(function(){
+    
+            let name = $('#newCategory').val().trim();
+            let rate = $('#newRate').val().trim();
+    
+            if(!name || !rate){
+                alert("Fill all fields");
+                return;
+            }
+    
+            $.post('../../backend/php/rates.php', {
+                action: 'add_category',
+                name: name,
+                rate: rate
+            }, function(res){
+    
+                alert(res.message);
+    
+                $('#newCategory').val('');
+                $('#newRate').val('');
+    
+                loadRates();
+    
+            }, 'json');
+    
+        });
+    
+        /* ================= DELETE (SOFT DELETE + MODAL) ================= */
+        $(document).on('click', '.deleteBtn', function(){
+            deleteId = $(this).data('id');
+            $('#deletePassword').val('');
+            $('#deleteModal').fadeIn().css('display','flex');
+        });
 
-        $.post('../../backend/php/rates.php', {
-            action: 'add_category',
-            name: name,
-            rate: rate
-        }, function(res){
+        // CANCEL BUTTON
+        $('#cancelDelete').click(function(){
+            $('#deleteModal').fadeOut();
+        });
 
-            alert(res.message);
-
-            $('#newCategory').val('');
-            $('#newRate').val('');
-
-            loadRates();
-
-        }, 'json');
-
+        // CLOSE WHEN CLICK OUTSIDE
+        $(document).mouseup(function(e){
+            let box = $(".modal-box");
+            if (!box.is(e.target) && box.has(e.target).length === 0) {
+                $('#deleteModal').fadeOut();
+            }
+        });
+                    
+        $('#confirmDelete').click(function(){
+    
+            let password = $('#deletePassword').val().trim();
+    
+            if(!password){
+                alert("Enter password");
+                return;
+            }
+    
+            $.post('../../backend/php/rates.php', {
+                action: 'delete_rate',
+                id: deleteId,
+                password: password
+            }, function(res){
+    
+                alert(res.message);
+    
+                if(res.status === 'success'){
+                    $('#deleteModal').fadeOut();
+                    loadRates();
+                }
+    
+            }, 'json');
+    
+        });
+        initNotifications();
     });
-
-});
-</script>
+    </script>
 
 </body>
 </html>

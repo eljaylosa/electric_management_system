@@ -5,7 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Reports - Electric Management System</title>
 <link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="../css/theme.css">
+
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+<script src="../js/notification.js"></script>
+<script src="../js/theme.js"></script>
+
 </head>
 
 <body>
@@ -25,7 +32,34 @@
             <li><a href="billing.html">Billing</a></li>
             <li><a href="payments.html">Payments</a></li>
             <li><a href="reports.html">Reports</a></li>
-            <li><a href="../../backend/php/auth.php?action=logout">Logout</a></li>
+            <li class="separator">|</li>
+                <li><a href="admin_signup_requests.html" class="request-btn">Check Requests</a></li>
+                <li>|</li>
+                <li><a href="../../backend/php/auth.php?action=logout" class="logout-btn">Logout</a></li>
+                <li style="position:relative;">
+                    <a href="#" id="notifBell">🔔 
+                        <span id="notifCount" style="
+                            background:red;
+                            color:white;
+                            border-radius:50%;
+                            padding:2px 6px;
+                            font-size:12px;
+                            "></span>
+                    </a>
+                    <div id="notifDropdown" style="
+                        display:none;
+                        position:absolute;
+                        right:0;
+                        background:white;
+                        width:300px;
+                        box-shadow:0 0 10px rgba(0,0,0,0.2);
+                        max-height:300px;
+                        overflow:auto;
+                    "></div>
+                </li>
+                <li>
+                    <button id="themeToggle">🌙</button>
+                </li>
         </ul>
     </div>
 </nav>
@@ -78,6 +112,10 @@
         </div>
     </div>
 
+    <h2>Reports Chart</h2>
+
+    <div id="reportsChart" style="min-height: 350px;"></div>
+
     <h2>Detailed Billing Report</h2>
 
     <div class="table-responsive">
@@ -99,14 +137,68 @@
     </div>
 </div>
 
+
 <script>
 $(document).ready(function(){
+
+    // render chart
+    let chart;
+
+    function renderChart(data) {
+
+        let paid = 0;
+        let unpaid = 0;
+        let due = 0;
+
+        data.forEach(bill => {
+
+            let amount = parseFloat(bill.amount);
+            let status = (bill.status || 'unpaid').toLowerCase();
+
+            if (status !== 'paid' && isDue(bill)) {
+                status = 'due';
+            }
+
+            if (status === 'paid') paid += amount;
+            else if (status === 'due') due += amount;
+            else unpaid += amount;
+        });
+
+        let options = {
+            chart: {
+                type: 'donut',
+                height: 350
+            },
+            series: [paid, unpaid, due],
+            labels: ['Paid', 'Unpaid', 'Due'],
+            colors: ['#2ecc71', '#e74c3c', '#f1c40f'],
+            title: {
+                text: 'Billing Status Overview'
+            }
+        };
+
+        if (chart) {
+            chart.updateOptions(options);
+        } else {
+            chart = new ApexCharts(document.querySelector("#reportsChart"), options);
+            chart.render();
+        }
+    }
 
     let reportData = [];
 
     $('#navToggle').click(function(){
         $('#navMenu').toggleClass('active');
     });
+
+    function isDue(bill) {
+        if (!bill.due_date) return false;
+
+        const today = new Date();
+        const dueDate = new Date(bill.due_date);
+
+        return bill.status !== 'paid' && dueDate < today;
+    }
 
     /* ================= LOAD YEARS ================= */
     function loadYears() {
@@ -143,13 +235,27 @@ $(document).ready(function(){
     data.forEach(bill => {
 
         let amount = parseFloat(bill.amount);
+        let status = (bill.status || 'unpaid').toLowerCase();
+
+        // override unpaid → due if overdue
+        if (status !== 'paid' && isDue(bill)) {
+            status = 'due';
+        }
+
+        let color =
+            status === 'paid' ? '#2ecc71' :
+            status === 'due' ? '#c0392b' :
+            '#e74c3c';
 
         // compute kWh
         let kwh = parseFloat(bill.curr_reading) - parseFloat(bill.prev_reading);
         if (isNaN(kwh)) kwh = 0;
 
-        if(bill.status === 'paid') paid += amount;
-        else unpaid += amount;
+        if (status === 'paid') {
+            paid += amount;
+        } else {
+            unpaid += amount;
+        }
 
         let kwhStyle = '';
         if (kwh >= 500) kwhStyle = 'style="color:red;font-weight:bold;"';
@@ -168,8 +274,8 @@ $(document).ready(function(){
                 <td>₱${amount.toFixed(2)}</td>
                 <td>${bill.due_date}</td>
 
-                <td style="color:${bill.status === 'paid' ? 'green' : 'red'};font-weight:bold;">
-                    ${bill.status.toUpperCase()}
+                <td style="color:${color}; font-weight:bold;">
+                    ${status.toUpperCase()}
                 </td>
             </tr>
         `;
@@ -183,6 +289,8 @@ $(document).ready(function(){
     let total = paid + unpaid;
     let rate = total ? (paid / total * 100).toFixed(1) : 0;
     $('#collectionRate').text(rate + '%');
+
+    renderChart(data);
     }
 
     /* ================= FILTER ================= */
@@ -212,11 +320,13 @@ $(document).ready(function(){
         });
 
         renderReport(filtered);
+        renderChart(filtered);
     }
 
     /* EVENTS */
     $('#monthFilter, #yearFilter, #sortDate').on('change', filterReport);
 
+    initNotifications();
     loadYears();
     loadReportData();
 

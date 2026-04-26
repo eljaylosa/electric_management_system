@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trash Bin</title>
+
+  <!-- ✅ ADD JQUERY -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
+    th { background: #f5f5f5; }
+    button { padding: 6px 10px; margin: 2px; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+<h1>🗑️ Trash Bin</h1>
+
+<table id="trashTable">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Meter</th>
+      <th>Deleted At</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td colspan="4">Loading...</td></tr>
+  </tbody>
+</table>
+
+<script>
+$(document).ready(function() {
+
+    // 🔥 LOAD TRASH
+    function loadTrash() {
+        $.get('../../backend/php/consumers.php?action=get_deleted', function(res) {
+            let rows = '';
+
+            if (res.status === 'success') {
+
+                if (!res.data.length) {
+                    rows = '<tr><td colspan="4">🗑️ Trash is empty</td></tr>';
+                } else {
+                    res.data.forEach(c => {
+                        rows += `
+                            <tr>
+                                <td>${c.name}</td>
+                                <td>${c.meter_no}</td>
+                                <td>${c.deleted_at || '-'}</td>
+                                <td>
+                                    <button class="restoreBtn" data-id="${c.id}">♻ Restore</button>
+                                    <button class="deleteForeverBtn" data-id="${c.id}">🔥 Delete</button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                }
+
+            } else {
+                rows = `<tr><td colspan="4">❌ ${res.message}</td></tr>`;
+            }
+
+            $('#trashTable tbody').html(rows);
+
+        }, 'json').fail(function() {
+            $('#trashTable tbody').html('<tr><td colspan="4">❌ Failed to load data</td></tr>');
+        });
+    }
+
+    // 🔥 RESTORE
+    $(document).on('click', '.restoreBtn', function() {
+        const id = $(this).data('id');
+
+        $.post('../../backend/php/consumers.php', {
+            action: 'restore',
+            id: id
+        }, function(res) {
+            if (res.status === 'success') {
+                alert('♻ Restored');
+                loadTrash();
+            } else {
+                alert('❌ ' + res.message);
+            }
+        }, 'json');
+    });
+
+    // 🔥 PERMANENT DELETE
+    $(document).on('click', '.deleteForeverBtn', function() {
+        const id = $(this).data('id');
+
+        if (!confirm('⚠ Permanently delete? This cannot be undone.')) return;
+
+        $.post('../../backend/php/consumers.php', {
+            action: 'force_delete',
+            id: id
+        }, function(res) {
+            if (res.status === 'success') {
+                alert('🔥 Permanently deleted');
+                loadTrash();
+            } else {
+                alert('❌ ' + res.message);
+            }
+        }, 'json');
+    });
+
+    // 🔥 INITIAL LOAD (VERY IMPORTANT)
+    loadTrash();
+
+});
+</script>
+
+</body>
+</html>

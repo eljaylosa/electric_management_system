@@ -5,7 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Customer Dashboard - Electric Management System</title>
     <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/theme.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="../js/notification.js" defer></script>
+    <script src="../js/theme.js"></script>
 </head>
 <body>
     <nav>
@@ -20,7 +23,32 @@
             <ul id="navMenu">
                 <li><a href="customer_dashboard.html">My Dashboard</a></li>
                 <li><a href="customer_profile.html">Profile</a></li>
-                <li><a href="../../backend/php/auth.php?action=logout">Logout</a></li>
+                <li>|</li>
+                <li><a href="../../backend/php/auth.php?action=logout" class="logout-btn">Logout</a></li>
+                <li style="position:relative;">
+                    <a href="#" id="notifBell">🔔 
+                        <span id="notifCount" style="
+                            background:red;
+                            color:white;
+                            border-radius:50%;
+                            padding:2px 6px;
+                            font-size:12px;
+                            "></span>
+                    </a>
+                    <div id="notifDropdown" style="
+                        display:none;
+                        position:absolute;
+                        right:0;
+                        background:white;
+                        width:300px;
+                        box-shadow:0 0 10px rgba(0,0,0,0.2);
+                        max-height:300px;
+                        overflow:auto;
+                    "></div>
+                </li>
+                <li>
+                    <button id="themeToggle">🌙</button>
+                </li>
             </ul>
         </div>
     </nav>
@@ -40,9 +68,28 @@
                 <h3>Meter Number</h3>
                 <div class="value" id="meterNo" style="font-size: 1.2rem;">-</div>
             </div>
+            <div class="card" style="background-color: rgba(200, 17, 17, 0.705);">
+                <h3 style="color: white;">Due Bills</h3>
+                <div class="value" id="totalDueConsumers" style="color: white;">0</div>
+            </div>
         </div>
 
         <h2>My Billing History</h2>
+        <div class="filters" style="margin: 15px 0; display: flex; gap: 10px;">
+    
+            <select id="statusFilter">
+                <option value="all">All Status</option>
+                <option value="paid">Paid</option>
+                <option value="unpaid">Unpaid</option>
+                <option value="due-bills">Due Bills</option>
+            </select>
+        
+            <select id="sortFilter">
+                <option value="latest">Latest</option>
+                <option value="oldest">Oldest</option>
+            </select>
+
+        </div>
         <div class="table-responsive">
             <table id="billsTable">
                 <thead>
@@ -63,114 +110,204 @@
 
     <script>
         $(document).ready(function() {
-            // Mobile Navigation Toggle
+            // Mobile nav toggle
             $('#navToggle').on('click', function() {
                 $('#navMenu').toggleClass('active');
             });
 
-            // Load customer data and bills
+            // load customer name from consumer table and meter number
+            $.ajax({
+                url: '../../backend/php/consumers.php?action=get_consumer_info',
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    if (response.status === 'success') {
+                        $('#customerName').text(response.data.name);
+                        $('#meterNo').text(response.data.meter_no);
+                    }
+                }
+            });
+        
+            // Load customer data
+            let allBills = [];
             function loadCustomerData() {
                 $.ajax({
                     url: '../../backend/php/billing.php?action=get_all_bills',
                     type: 'GET',
                     dataType: 'json',
                     success: function(response) {
-                        if (response.status === 'success') {
-                            let rows = '';
-                            let totalBills = response.data.length;
-                            let unpaidAmount = 0;
-                            
-                            if (totalBills > 0) {
-                                $('#customerName').text(response.data[0].consumer_name);
-                                // Note: In a real app, we'd have a separate profile API for meter_no
-                                // For now, we'll just show the bills
-                            }
+                            if (response.status === 'success') {
 
-                            if (totalBills === 0) {
-                                rows = '<tr><td colspan="4" style="text-align:center;">No billing history found.</td></tr>';
-                            } else {
-                                response.data.forEach(bill => {
-                                    if (bill.status === 'unpaid') {
-                                        unpaidAmount += parseFloat(bill.amount);
-                                    }
-                                    rows += `
-                                        <tr>
-                                            <td data-label="Due Date">${bill.due_date}</td>
-                                            <td data-label="Reading">${bill.prev_reading} / ${bill.curr_reading}</td>
-                                            <td data-label="Amount">₱${parseFloat(bill.amount).toFixed(2)}</td>
-                                            <td data-label="Status" style="color: ${bill.status === 'paid' ? '#2ecc71' : '#e74c3c'}; font-weight: bold;">${bill.status.toUpperCase()}</td>
-                                            <td data-label="Actions">
-                                                ${bill.status === 'paid' ? `
-                                                    <button class="btn btn-primary viewBillBtn" data-id="${bill.id}">
-                                                        View Receipt
-                                                    </button>
-                                                ` : `
-                                                    <div style="display:flex; gap:5px; flex-wrap:wrap;">
-                                                        <button class="btn btn-success gcashBtn" data-id="${bill.id}">
-                                                            Pay GCash
-                                                        </button>
-                                                        <button class="btn btn-warning mayaBtn" data-id="${bill.id}">
-                                                            Pay Maya
-                                                        </button>
-                                                    </div>
-                                                `}
-                                            </td>
-                                        </tr>
-                                    `;
-                                });
+                                allBills = response.data; // store globally
+
+                                renderTable(allBills);
+
+                                $('#totalBills').text(allBills.length);
+
+                                let unpaidAmount = allBills
+                                    .filter(b => b.status === 'unpaid')
+                                    .reduce((sum, b) => sum + parseFloat(b.amount), 0);
+
+                                $('#unpaidAmount').text('₱' + unpaidAmount.toFixed(2));
+
+                                let dueBillsCount = allBills.filter(b => isDue(b)).length;
+                                $('#totalDueConsumers').text(dueBillsCount);
+
                             }
-                            $('#billsTable tbody').html(rows);
-                            $('#totalBills').text(totalBills);
-                            $('#unpaidAmount').text('₱' + unpaidAmount.toFixed(2));
-                        }
-                    },
-                    error: function() {
-                        $('#billsTable tbody').html('<tr><td colspan="4" style="text-align:center; color:red;">Failed to load data.</td></tr>');
+                            
+                            // let rows = '';
+                            // let totalBills = response.data.length;
+                            // let unpaidAmount = 0;
+                            
+                            // if (totalBills > 0) {
+                            //     $('#customerName').text(response.data[0].consumer_name);
+                            // }
+        
+                            // if (totalBills === 0) {
+                            //     rows = '<tr><td colspan="5" style="text-align:center;">No billing history found.</td></tr>';
+                            // } else {
+                            //     response.data.forEach(bill => {
+                            //         if (bill.status === 'unpaid') {
+                            //             unpaidAmount += parseFloat(bill.amount);
+                            //         }
+                            //         rows += `
+                            //             <tr>
+                            //                 <td>${bill.due_date}</td>
+                            //                 <td>${bill.prev_reading} / ${bill.curr_reading}</td>
+                            //                 <td>₱${parseFloat(bill.amount).toFixed(2)}</td>
+                            //                 <td style="color: ${bill.status === 'paid' ? '#2ecc71' : '#e74c3c'}; font-weight: bold;">${bill.status.toUpperCase()}</td>
+                            //                 <td>
+                            //                     ${bill.status === 'paid' ? `
+                            //                         <button class="btn btn-primary viewBillBtn" data-id="${bill.id}">View Receipt</button>
+                            //                     ` : `
+                            //                         <div style="display:flex; gap:5px;">
+                            //                             <button class="btn btn-success gcashBtn" data-id="${bill.id}">GCash</button>
+                            //                             <button class="btn btn-warning mayaBtn" data-id="${bill.id}">Maya</button>
+                            //                         </div>
+                            //                     `}
+                            //                 </td>
+                            //             </tr>
+                            //         `;
+                            //     });
+                            // }
+                            // $('#billsTable tbody').html(rows);
+                            // $('#totalBills').text(totalBills);
+                            // $('#unpaidAmount').text('₱' + unpaidAmount.toFixed(2));
+                        
                     }
                 });
             }
 
-            $(document).on('click', '.gcashBtn, .mayaBtn', function () {
+            function isDue(bill) {
+                if (!bill.due_date) return false;
+
+                const today = new Date();
+                const dueDate = new Date(bill.due_date + "T00:00:00");
+
+                return bill.status === 'unpaid' && dueDate < today;
+            }
+
+            function getBillStatus(bill) {
+                if (bill.status === 'paid') return 'paid';
+                if (isDue(bill)) return 'due';
+                return 'unpaid';
+            }
+
+            function renderTable(data) {
+                let rows = '';
+
+                if (data.length === 0) {
+                    rows = '<tr><td colspan="5" style="text-align:center;">No billing history found.</td></tr>';
+                } else {
+                    data.forEach(bill => {
+
+                        const is_due = isDue(bill);
+
+                        const statusText = is_due 
+                            ? 'DUE' 
+                            : (bill.status || 'unpaid').toUpperCase();
+
+                        const statusColor = is_due 
+                            ? '#c0392b' 
+                            : (bill.status === 'paid' ? '#2ecc71' : '#e74c3c');
+
+                        rows += `
+                            <tr>
+                                <td>${bill.due_date}</td>
+                                <td>${bill.prev_reading} / ${bill.curr_reading}</td>
+                                <td>₱${parseFloat(bill.amount).toFixed(2)}</td>
+
+                                <!-- ✅ SINGLE STATUS COLUMN -->
+                                <td style="color:${statusColor}; font-weight:bold;">
+                                    ${statusText}
+                                </td>
+
+                                <td>
+                                    ${bill.status === 'paid' ? `
+                                        <button class="btn btn-primary viewBillBtn" data-id="${bill.id}">View Receipt</button>
+                                    ` : `
+                                        <div style="display:flex; gap:5px;">
+                                            <button class="btn btn-success gcashBtn" data-id="${bill.id}">GCash</button>
+                                            <button class="btn btn-warning mayaBtn" data-id="${bill.id}">Maya</button>
+                                        </div>
+                                    `}
+                                </td>
+                            </tr>
+                        `;
+                    });
+                }
+
+                $('#billsTable tbody').html(rows);
+            }
+
+            $('#statusFilter, #sortFilter').on('change', function () {
+
+                let filtered = [...allBills];
+
+                const status = $('#statusFilter').val();
+                const sort = $('#sortFilter').val();
+
+                // STATUS FILTER
+                if (status === 'paid') {
+                    filtered = filtered.filter(b => b.status === 'paid');
+                }
+                else if (status === 'unpaid') {
+                    filtered = filtered.filter(b => b.status === 'unpaid');
+                }
+                else if (status === 'due-bills') {
+                    filtered = filtered.filter(b => isDue(b));
+                }
+
+                // SORT FILTER
+                filtered.sort((a, b) => {
+                    let dateA = new Date(a.due_date);
+                    let dateB = new Date(b.due_date);
+
+                    return sort === 'latest' ? dateB - dateA : dateA - dateB;
+                });
+
+                renderTable(filtered);
+            });
+        
+            // Bill actions (event delegation)
+            $(document).on('click', '.gcashBtn, .mayaBtn', function() {
                 const billId = $(this).data('id');
                 const method = $(this).hasClass('gcashBtn') ? 'gcash' : 'maya';
-
                 window.location.href = `payment_gateway.html?bill_id=${billId}&method=${method}`;
             });
-
-            // $(document).on('click', '.payNowBtn', function () {
-            //     const billId = $(this).data('id');
-
-            //     if (!confirm("Confirm payment for this bill?")) return;
-
-            //     $.ajax({
-            //         url: '../../backend/php/billing.php',
-            //         type: 'POST',
-            //         data: {
-            //             action: 'record_payment',
-            //             bill_id: billId,
-            //             amount_paid: 0, // backend will compute later (we improve this next)
-            //             payment_date: new Date().toISOString().split('T')[0]
-            //         },
-            //         dataType: 'json',
-            //         success: function (res) {
-            //             if (res.status === 'success') {
-            //                 alert("Payment successful!");
-            //                 loadCustomerData();
-            //             } else {
-            //                 alert(res.message);
-            //             }
-            //         }
-            //     });
-            // });
-
-            loadCustomerData();
-
-            // View bill details (Open Receipt)
-            $(document).on('click', '.viewBillBtn', function() {
-                const id = $(this).data('id');
-                window.open(`receipt.html?id=${id}`, '_blank');
+        
+            $(document).on('click', '.viewBillBtn', function(e) {
+                e.preventDefault();
+                const billId = $(this).data('id');
+                window.open(`receipt.html?id=${billId}`, '_blank', 'width=800,height=1000');
             });
+        
+            // Initial load
+            initNotifications();
+            loadCustomerData();
         });
-    </script>
-</body>
+        </script>
+
+    
+    </body>
 </html>

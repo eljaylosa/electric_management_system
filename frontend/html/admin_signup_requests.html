@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Signup Requests</title>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<style>
+  /* Your existing CSS remains the same */
+  body { font-family: Arial, sans-serif; background: #f4f6f9; padding: 20px; }
+  table { border-collapse: collapse; width: 100%; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.08); }
+  th { background: #2c3e50; color: white; padding: 12px; }
+  td { padding: 10px; border-bottom: 1px solid #eee; text-align: center; }
+  tr:hover { background: #f1f1f1; }
+  button { padding: 6px 10px; border: none; border-radius: 5px; cursor: pointer; margin: 2px; font-weight: bold; }
+  .approveBtn { background: #2ecc71; color: white; }
+  .approveBtn:hover { background: #27ae60; }
+  .rejectBtn { background: #e74c3c; color: white; }
+  .rejectBtn:hover { background: #c0392b; }
+  #debug { background: #fff3cd; padding: 10px; margin: 10px 0; border-radius: 5px; font-size: 12px; }
+  .no-data { text-align: center; padding: 20px; color: #666; }
+  h1 { text-align: center; margin-bottom: 20px; color: #2c3e50; }
+</style>
+
+<body>
+  <h1>Pending Signup Requests</h1>
+  <div id="debug"></div>
+  
+  <table border="1" width="100%">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Address</th>
+        <th>Contact</th>
+        <th>Email</th>
+        <th>Category</th>
+        <th>Date</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="requestTable">
+      <tr><td colspan="6" class="no-data">Loading...</td></tr>
+    </tbody>
+  </table>
+
+<script>
+let debugInfo = $('#debug');
+
+function logDebug(msg) {
+    console.log(msg);
+    debugInfo.html('<strong>Debug:</strong> ' + msg);
+}
+
+function loadRequests() {
+    logDebug('Loading requests...');
+    $.ajax({
+        url: '../../backend/php/admin_signup_requests.php', // Same directory
+        method: 'GET',
+        dataType: 'json',
+        success: function(res) {
+            logDebug('Response received: ' + JSON.stringify(res));
+            
+            if (res.status !== "success") {
+                $('#requestTable').html('<tr><td colspan="6" class="no-data">Error: ' + (res.message || 'Unknown error') + '</td></tr>');
+                return;
+            }
+
+            if (!res.data || res.data.length === 0) {
+                $('#requestTable').html('<tr><td colspan="6" class="no-data">No pending requests</td></tr>');
+                return;
+            }
+
+            let rows = "";
+            res.data.forEach(r => {
+                rows += `
+                    <tr>
+                        <td>${escapeHtml(r.full_name)}</td>
+                        <td>${escapeHtml(r.address || '')}</td>
+                        <td>${escapeHtml(r.contact || '')}</td>
+                        <td>${escapeHtml(r.email)}</td>
+                        <td>${r.category_id ?? 'N/A'}</td>
+                        <td>${new Date(r.created_at).toLocaleDateString()}</td>
+                        <td>
+                            <button class="approveBtn" data-id="${r.id}">✅ Approve</button>
+                            <button class="rejectBtn" data-id="${r.id}">❌ Reject</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            $('#requestTable').html(rows);
+            logDebug(`Loaded ${res.count || res.data.length} requests`);
+        },
+        error: function(xhr, status, error) {
+            let msg = `AJAX Error: ${status} - ${error}`;
+            console.error('Full response:', xhr.responseText);
+            logDebug(msg);
+            $('#requestTable').html('<tr><td colspan="6" class="no-data">Failed to load: ' + msg + '</td></tr>');
+        }
+    });
+}
+
+function escapeHtml(text) {
+    let map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+    return text.replace(/[&<>"']/g, m => map[m]);
+}
+
+$(document).on('click', '.approveBtn', function() {
+    approve($(this).data('id'));
+});
+
+$(document).on('click', '.rejectBtn', function() {
+    reject($(this).data('id'));
+});
+
+function approve(id) {
+    $.post('../../backend/php/admin_signup_requests.php', {
+        action: 'approve_request',
+        id: id
+    }, function(res) {
+        if (res.status === "success") {
+            alert("✅ APPROVED!\n\n" + 
+                `Username: ${res.credentials.username}\n` +
+                `Password: ${res.credentials.password}\n` +
+                `Email: ${res.credentials.email}\n` +
+                `Meter No: ${res.credentials.meter_no}`
+            );
+            loadRequests();
+        } else {
+            alert("❌ " + res.message);
+        }
+    }, 'json').fail(function(xhr) {
+        alert('Network error: ' + xhr.responseText);
+    });
+}
+
+function reject(id) {
+    $.post('../../backend/php/admin_signup_requests.php', {
+        action: 'reject_request',
+        id: id
+    }, function(res) {
+        alert(res.message || 'Rejected');
+        loadRequests();
+    }, 'json').fail(function(xhr) {
+        alert('Network error');
+    });
+}
+
+// Auto-reload every 30 seconds
+setInterval(loadRequests, 30000);
+
+$(document).ready(function() {
+    loadRequests();
+});
+</script>
+</body>
+</html>

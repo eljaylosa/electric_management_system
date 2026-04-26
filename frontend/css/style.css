@@ -2,32 +2,49 @@
 :root {
     --primary-color: #2563eb;
     --primary-hover: #1d4ed8;
+
     --secondary-color: #10b981;
-    --secondary-hover: #059669;
     --danger-color: #ef4444;
-    --danger-hover: #dc2626;
+
     --bg-color: #f8fafc;
     --card-bg: #ffffff;
     --text-main: #1e293b;
     --text-muted: #64748b;
     --border-color: #e2e8f0;
-    --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+
+    --table-header: #f8fafc;
+    --hover-bg: #f1f5f9;
+    --filter-bg: #e2e2e2;
+
+    --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+[data-theme="dark"] {
+    --bg-color: #0f172a;
+    --card-bg: #1e293b;
+    --text-main: #f1f5f9;
+    --text-muted: #94a3b8;
+    --border-color: #334155;
+
+    --table-header: #1e293b;
+    --hover-bg: #334155;
+    --filter-bg: #1e293b;
 }
 /* hide scroll bar */
 /* Chrome, Edge, Safari */
-    body::-webkit-scrollbar {
+    /* body::-webkit-scrollbar {
         display: none;
-    }
+    } */
 
     /* Firefox */
-    body {
+    /* body {
         scrollbar-width: none;
-    }
+    } */
 
     /* IE/Old Edge */
-    body {
+    /* body {
         -ms-overflow-style: none;
-    }
+    } */
 
 body {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -114,6 +131,34 @@ nav ul li a:hover {
     color: white;
 }
 
+    
+
+/* request-btn */
+
+.request-btn {
+    background-color: rgba(255, 255, 0, 0.916);
+    padding: 10px;
+    border-radius: 10px;
+    color: black;
+    transition: .1s;
+}
+.request-btn:hover {
+    background-color: rgba(255, 255, 0, 0.70);
+    color: black;
+}
+
+
+/* log out css */
+.logout-btn {
+    background-color: var(--secondary-color);
+    padding: 10px;
+    border-radius: 10px;
+    transition: .1s;
+}
+.logout-btn:hover {
+    background-color: #059669;
+}
+
 /* Forms */
 .form-group {
     margin-bottom: 1.5rem;
@@ -124,6 +169,11 @@ form label {
     margin-bottom: 0.5rem;
     font-weight: 600;
     font-size: 0.9rem;
+    color: var(--text-main);
+}
+
+input, select {
+    background: var(--card-bg);
     color: var(--text-main);
 }
 
@@ -196,12 +246,11 @@ form button:hover {
 table {
     width: 100%;
     border-collapse: collapse;
-    background: white;
+    background: var(--card-bg);
 }
 
 table th {
-    background-color: #f8fafc;
-    color: var(--text-muted);
+    background-color: var(--table-header);
     font-weight: 600;
     text-transform: uppercase;
     font-size: 0.75rem;
@@ -209,12 +258,16 @@ table th {
     padding: 1rem;
     text-align: left;
     border-bottom: 1px solid var(--border-color);
+    background: var(--bg-color);
+    color: var(--text-muted);
 }
 
 table td {
     padding: 1rem;
     border-bottom: 1px solid var(--border-color);
     font-size: 0.95rem;
+    background: var(--card-bg);
+    color: var(--text-main);
 }
 
 table tr:last-child td {
@@ -222,7 +275,7 @@ table tr:last-child td {
 }
 
 table tr:hover {
-    background-color: #f1f5f9;
+    background-color: var(--hover-row);
 }
 
 /* Dashboard Cards */
@@ -308,7 +361,7 @@ button:disabled {
     gap: 10px;
     margin: 15px 0;
     flex-wrap: wrap;
-    background-color: rgb(216, 216, 216);
+    background-color: var(--filter-bg);
     padding: 15px;
     border-radius: 10px;
 }
@@ -319,7 +372,8 @@ button:disabled {
 #kwhFilter,
 #monthFilter,
 #yearFilter,
-#sortDate {
+#sortDate,
+#sortFilter {
     padding: 10px;
     border: 1px solid #ccc;
     border-radius: 6px;
@@ -332,7 +386,8 @@ button:disabled {
 #kwhFilter:focus,
 #monthFilter:focus,
 #yearFilter:focus,
-#sortDate:focus {
+#sortDate:focus,
+#sortFilter:focus {
     border-color: #4CAF50;
     box-shadow: 0 0 5px rgba(76, 175, 80, 0.3);
 }
@@ -382,6 +437,7 @@ button:disabled {
 
 /* Mobile Responsiveness */
 @media (max-width: 768px) {
+    
     .nav-toggle { display: block; }
     nav ul {
         display: none;
@@ -393,6 +449,10 @@ button:disabled {
         background-color: var(--primary-color);
         padding: 1rem 0;
         box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+
+        max-height: 80vh;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch; /* smooth iOS scroll */
     }
     nav ul.active { display: flex; }
     nav ul li { margin: 0.5rem 1.5rem; }

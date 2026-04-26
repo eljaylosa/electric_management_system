@@ -2,101 +2,433 @@
 session_start();
 require_once 'config.php';
 require_once 'auth.php';
+require_once 'mailer.php';
 
 header('Content-Type: application/json');
 
-// Check if user is logged in
 if (!isLoggedIn()) {
-    echo json_encode(['status' => 'error', 'message' => 'Unauthorized access']);
+    echo json_encode(['status' => 'error', 'message' => 'Unauthorized']);
     exit;
 }
 
-// Consumer Management API
+$user_id = $_SESSION['user_id'];
+
+/* ================= GET ================= */
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    // Get all consumers
-    if (isset($_GET['action']) && $_GET['action'] === 'get_all') {
-        $stmt = $conn->prepare("SELECT c.id, c.name, c.address, c.contact, c.meter_no, IFNULL(cat.name, 'Uncategorized') AS category_name, IFNULL(cat.rate_per_kwh, 0) AS rate_per_kwh FROM consumers c LEFT JOIN categories cat ON c.category_id = cat.id");
+    $action = $_GET['action'] ?? '';
+
+    // if ($action === 'get_all') {
+    //     $stmt = $conn->prepare("
+    //         SELECT 
+    //             c.id, c.name, c.address, c.contact, c.meter_no,
+    //             c.category_id,
+    //             COALESCE(cat.name, 'Uncategorized') AS category_name
+    //         FROM consumers c
+    //         LEFT JOIN categories cat ON cat.id = c.category_id
+    //         WHERE c.is_deleted = 0
+    //     ");
+    //     // $stmt = $conn->prepare("
+    //     //     SELECT c.id, c.name, c.address, c.contact, c.meter_no,
+    //     //            c.category_id,
+    //     //            IFNULL(cat.name, 'Uncategorized') AS category_name
+    //     //     FROM consumers c
+    //     //     LEFT JOIN categories cat ON c.category_id = cat.id
+    //     //     WHERE c.is_deleted = 0
+    //     // ");
+    //     $stmt->bind_param("i", $user_id);
+    //     $stmt->execute();
+    //     $result = $stmt->get_result();
+    //     $data = [];
+    //     while ($row = $result->fetch_assoc()) {
+    //         $data[] = $row;
+    //     }
+    //     echo json_encode(['status' => 'success', 'data' => $data]);
+    //     exit;
+    // }
+
+    // get_consumer_info (get only the consumer name and meter_no) ✅ FIXED
+    if ($action === 'get_consumer_info') {
+        $stmt = $conn->prepare("
+            SELECT name, meter_no 
+            FROM consumers 
+            WHERE user_id = ? AND is_deleted = 0
+        ");
+        $stmt->bind_param("i", $user_id);
         $stmt->execute();
         $result = $stmt->get_result();
-        $consumers = [];
-        while ($row = $result->fetch_assoc()) {
-            $consumers[] = $row;
+        $consumer = $result->fetch_assoc();
+
+        if (!$consumer) {
+            echo json_encode(['status' => 'error', 'message' => 'Consumer not found']);
+            exit;
         }
-        echo json_encode(['status' => 'success', 'data' => $consumers]);
-        $stmt->close();
+
+        echo json_encode(['status' => 'success', 'data' => $consumer]);
         exit;
     }
 
-    // Get a single consumer by ID
-    if (isset($_GET['action']) && $_GET['action'] === 'get_by_id' && isset($_GET['id'])) {
-        $id = $_GET['id'];
-        $stmt = $conn->prepare("SELECT c.id, c.name, c.address, c.contact, c.meter_no, c.category_id, cat.name AS category_name, cat.rate_per_kwh FROM consumers c JOIN categories cat ON c.category_id = cat.id WHERE c.id = ?");
-        $stmt->bind_param("i", $id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        if ($result->num_rows === 1) {
-            $consumer = $result->fetch_assoc();
-            echo json_encode(['status' => 'success', 'data' => $consumer]);
-        } else {
-            echo json_encode(['status' => 'error', 'message' => 'Consumer not found']);
+
+    if ($action === 'get_all') {
+
+        $sql = "SELECT c.id, c.name, c.address, c.contact, c.meter_no,
+                       c.category_id,
+                       IFNULL(cat.name, 'Uncategorized') AS category_name
+                FROM consumers c
+                LEFT JOIN categories cat ON c.category_id = cat.id
+                WHERE c.is_deleted = 0";
+    
+        $result = $conn->query($sql);
+    
+        if (!$result) {
+            echo json_encode([
+                "status" => "error",
+                "message" => $conn->error
+            ]);
+            exit;
         }
-        $stmt->close();
+    
+        $data = [];
+        while ($row = $result->fetch_assoc()) {
+            $data[] = $row;
+        }
+    
+        echo json_encode([
+            "status" => "success",
+            "data" => $data
+        ]);
         exit;
     }
+
+    if ($action === 'get_by_id') {
+
+        $id = (int)($_GET['id'] ?? 0);
+    
+        if ($id <= 0) {
+            echo json_encode(['status' => 'error', 'message' => 'Invalid ID']);
+            exit;
+        }
+    
+        $stmt = $conn->prepare("
+            SELECT 
+                c.id, 
+                c.name, 
+                c.address, 
+                c.contact, 
+                c.meter_no, 
+                c.category_id,
+                c.user_id,
+                COALESCE(u.email, '') AS email
+            FROM consumers c
+            LEFT JOIN users u ON c.user_id = u.id
+            WHERE c.id = ? 
+            AND c.is_deleted = 0
+            LIMIT 1
+        ");
+    
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+    
+        $result = $stmt->get_result();
+        $row = $result->fetch_assoc();
+    
+        if (!$row) {
+            echo json_encode(['status' => 'error', 'message' => 'Consumer not found']);
+            exit;
+        }
+    
+        echo json_encode([
+            'status' => 'success',
+            'data' => $row
+        ]);
+        exit;
+    }
+    
+    // GET DELETED CONSUMERS ✅ FIXED
+    if ($action === 'get_deleted') {
+        $stmt = $conn->prepare("
+            SELECT c.id, c.name, c.address, c.contact, c.meter_no,
+                   IFNULL(cat.name, 'Uncategorized') AS category_name,
+                   c.deleted_at
+            FROM consumers c
+            LEFT JOIN categories cat ON c.category_id = cat.id
+            WHERE c.is_deleted = 1
+            ORDER BY c.deleted_at DESC
+        ");
+    
+        $stmt->execute();
+        $result = $stmt->get_result();
+    
+        $data = [];
+        while ($row = $result->fetch_assoc()) {
+            $data[] = $row;
+        }
+    
+        echo json_encode(['status' => 'success', 'data' => $data]);
+        exit;
+    }
+
+    
+
+
 }
 
+/* ================= POST ================= */
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Add a new consumer
-    if (isset($_POST['action']) && $_POST['action'] === 'add') {
-        $name = $_POST['name'];
-        $address = $_POST['address'];
-        $contact = $_POST['contact'];
-        $meter_no = $_POST['meter_no'];
-        $category_id = $_POST['category_id'];
+    $action = $_POST['action'] ?? '';
 
-        $stmt = $conn->prepare("INSERT INTO consumers (name, address, contact, meter_no, category_id) VALUES (?, ?, ?, ?, ?)");
-        $stmt->bind_param("ssssi", $name, $address, $contact, $meter_no, $category_id);
-        if ($stmt->execute()) {
-            echo json_encode(['status' => 'success', 'message' => 'Consumer added successfully']);
-        } else {
-            echo json_encode(['status' => 'error', 'message' => 'Failed to add consumer']);
+    if ($action === 'add') {
+
+        $name = trim($_POST['name'] ?? '');
+        $address = trim($_POST['address'] ?? '');
+        $contact = trim($_POST['contact'] ?? '');
+        $email = trim($_POST['email'] ?? '');
+        $category_id = (int)($_POST['category_id'] ?? 0);
+    
+        if (empty($name) || empty($address)) {
+            echo json_encode(['status' => 'error', 'message' => 'Name and Address required']);
+            exit;
         }
-        $stmt->close();
+    
+        $username = strtolower(str_replace(' ', '_', $name));
+    
+        $conn->begin_transaction();
+    
+        try {
+    
+            // 1. CREATE USER
+            // $password = password_hash("123456", PASSWORD_DEFAULT);
+            $passwordPlain = bin2hex(random_bytes(4)); // 8-character random password
+            $passwordHash = password_hash($passwordPlain, PASSWORD_DEFAULT);
+
+            $check = $conn->prepare("SELECT id FROM users WHERE email = ?");
+            $check->bind_param("s", $email);
+            $check->execute();
+            $result = $check->get_result();
+
+            if ($result->num_rows > 0) {
+                echo json_encode([
+                    'status' => 'error',
+                    'message' => 'Email already exists'
+                ]);
+                exit;
+            }
+    
+            $stmtUser = $conn->prepare("
+                INSERT INTO users (username, password, email, role)
+                VALUES (?, ?, ?, 'customer')
+            ");
+            $stmtUser->bind_param("sss", $username, $passwordHash, $email);
+            $stmtUser->execute();
+    
+            $user_id = $stmtUser->insert_id;
+    
+            // 2. CREATE CONSUMER (WITHOUT meter_no FIRST)
+            $stmt = $conn->prepare("
+                INSERT INTO consumers (name, address, contact, category_id, user_id)
+                VALUES (?, ?, ?, ?, ?)
+            ");
+            $stmt->bind_param("sssii", $name, $address, $contact, $category_id, $user_id);
+            $stmt->execute();
+    
+            $consumer_id = $stmt->insert_id;
+    
+            // 3. GENERATE METER NO
+            $meter_no = "MTR-" . str_pad($consumer_id, 6, "0", STR_PAD_LEFT);
+    
+            // 4. UPDATE CONSUMER WITH METER NO
+            $update = $conn->prepare("
+                UPDATE consumers 
+                SET meter_no = ? 
+                WHERE id = ?
+            ");
+            $update->bind_param("si", $meter_no, $consumer_id);
+            $update->execute();
+    
+            $conn->commit();
+
+            sendCredentialsEmail($email, $username, $passwordPlain, $meter_no);
+    
+            echo json_encode([
+                'status' => 'success',
+                'message' => 'Created successfully!',
+                'meter_no' => $meter_no
+            ]);
+    
+        } catch (Exception $e) {
+            $conn->rollback();
+            echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+        }
+    
         exit;
     }
 
-    // Update an existing consumer
-    if (isset($_POST['action']) && $_POST['action'] === 'update' && isset($_POST['id'])) {
-        $id = $_POST['id'];
-        $name = $_POST['name'];
-        $address = $_POST['address'];
-        $contact = $_POST['contact'];
-        $meter_no = $_POST['meter_no'];
-        $category_id = $_POST['category_id'];
+    // UPDATE ✅ FULLY FIXED - NO CRASHES
+    if ($action === 'update') {
 
-        $stmt = $conn->prepare("UPDATE consumers SET name = ?, address = ?, contact = ?, meter_no = ?, category_id = ? WHERE id = ?");
+        $id = (int)($_POST['id'] ?? 0);
+        $name = trim($_POST['name'] ?? '');
+        $address = trim($_POST['address'] ?? '');
+        $contact = trim($_POST['contact'] ?? '');
+        $email = trim($_POST['email'] ?? '');
+        $meter_no = trim($_POST['meter_no'] ?? '');
+        $category_id = (int)($_POST['category_id'] ?? 0);
+    
+        if ($id <= 0 || empty($name) || empty($address) || empty($meter_no)) {
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'ID, Name, Address, and Meter No required'
+            ]);
+            exit;
+        }
+    
+        // 🔥 GET consumer user_id
+        $getUser = $conn->prepare("SELECT user_id FROM consumers WHERE id = ?");
+        $getUser->bind_param("i", $id);
+        $getUser->execute();
+        $res = $getUser->get_result();
+        $row = $res->fetch_assoc();
+    
+        if (!$row) {
+            echo json_encode(['status' => 'error', 'message' => 'Consumer not found']);
+            exit;
+        }
+    
+        $consumer_user_id = $row['user_id'];
+    
+        // 🔥 UPDATE consumers
+        $stmt = $conn->prepare("
+            UPDATE consumers 
+            SET name=?, address=?, contact=?, meter_no=?, category_id=?
+            WHERE id=?
+        ");
         $stmt->bind_param("ssssii", $name, $address, $contact, $meter_no, $category_id, $id);
-        if ($stmt->execute()) {
-            echo json_encode(['status' => 'success', 'message' => 'Consumer updated successfully']);
-        } else {
-            echo json_encode(['status' => 'error', 'message' => 'Failed to update consumer']);
+        $success = $stmt->execute();
+    
+        // 🔥 UPDATE users email (ONLY ONCE)
+        if ($success) {
+            $updateUser = $conn->prepare("
+                UPDATE users 
+                SET email = ?
+                WHERE id = ?
+            ");
+            $updateUser->bind_param("si", $email, $consumer_user_id);
+            $updateUser->execute();
         }
-        $stmt->close();
+    
+        echo json_encode([
+            'status' => $success ? 'success' : 'error',
+            'message' => $success ? 'Updated successfully!' : $stmt->error,
+            'affected_rows' => $stmt->affected_rows ?? 0
+        ]);
+    
         exit;
     }
 
-    // Delete a consumer
-    if (isset($_POST['action']) && $_POST['action'] === 'delete' && isset($_POST['id'])) {
-        $id = $_POST['id'];
-        $stmt = $conn->prepare("DELETE FROM consumers WHERE id = ?");
-        $stmt->bind_param("i", $id);
-        if ($stmt->execute()) {
-            echo json_encode(['status' => 'success', 'message' => 'Consumer deleted successfully']);
-        } else {
-            echo json_encode(['status' => 'error', 'message' => 'Failed to delete consumer']);
+    // DELETE ✅ FIXED
+    // if ($action === 'delete') {
+    //     $id = (int)($_POST['id'] ?? 0);
+        
+    //     $stmt = $conn->prepare("DELETE FROM consumers WHERE id = ? AND user_id = ?");
+    //     $stmt->bind_param("ii", $id, $user_id);
+    //     $success = $stmt->execute();
+        
+    //     echo json_encode([
+    //         'status' => $success ? 'success' : 'error',
+    //         'message' => $success ? 'Deleted successfully!' : $stmt->error
+    //     ]);
+    //     exit;
+    // }
+
+    // consumers.php
+    if ($action === 'delete') {
+
+        $id = intval($_POST['id'] ?? 0);
+        $inputPassword = $_POST['password'] ?? '';
+    
+        if ($id <= 0 || empty($inputPassword)) {
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Invalid request'
+            ]);
+            exit;
         }
-        $stmt->close();
+    
+        // ✅ Verify admin password
+        $stmt = $conn->prepare("SELECT password FROM users WHERE id = ? AND role = 'admin'");
+        $stmt->bind_param("i", $user_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $user = $result->fetch_assoc();
+    
+        if (!$user || !password_verify($inputPassword, $user['password'])) {
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Incorrect password'
+            ]);
+            exit;
+        }
+    
+        // ✅ Soft delete WITH user protection
+        $stmt = $conn->prepare("
+            UPDATE consumers 
+            SET is_deleted = 1, deleted_at = NOW() 
+            WHERE id = ?
+        ");
+        $stmt->bind_param("i", $id);
+    
+        if ($stmt->execute() && $stmt->affected_rows > 0) {
+            echo json_encode([
+                'status' => 'success',
+                'message' => 'Consumer deleted successfully'
+            ]);
+        } else {
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Delete failed or not authorized'
+            ]);
+        }
+    
+        exit; // 🔥 VERY IMPORTANT
+    }
+
+    // RESTORE CONSUMER ✅ FIXED
+    if ($action === 'restore') {
+        $id = intval($_POST['id'] ?? 0);
+    
+        $stmt = $conn->prepare("
+            UPDATE consumers 
+            SET is_deleted = 0, deleted_at = NULL 
+            WHERE id = ?
+        ");
+        $stmt->bind_param("i", $id);
+    
+        if ($stmt->execute() && $stmt->affected_rows > 0) {
+            echo json_encode(['status' => 'success', 'message' => 'Consumer restored']);
+        } else {
+            echo json_encode(['status' => 'error', 'message' => 'Restore failed']);
+        }
         exit;
     }
+
+    // FORCE DELETE CONSUMER ✅ FIXED
+    if ($action === 'force_delete') {
+        $id = intval($_POST['id'] ?? 0);
+    
+        $stmt = $conn->prepare("
+            DELETE FROM consumers 
+            WHERE id = ? AND is_deleted = 1
+        ");
+        $stmt->bind_param("i", $id);
+    
+        if ($stmt->execute() && $stmt->affected_rows > 0) {
+            echo json_encode(['status' => 'success', 'message' => 'Permanently deleted']);
+        } else {
+            echo json_encode(['status' => 'error', 'message' => 'Delete failed']);
+        }
+        exit;
+    }
+
+    // Invalid action
+    echo json_encode(['status' => 'error', 'message' => 'Invalid action']);
 }
 ?>

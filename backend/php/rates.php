@@ -5,122 +5,167 @@ require_once 'auth.php';
 
 header('Content-Type: application/json');
 
-/* ================= CHECK LOGIN ================= */
+/* ================= AUTH ================= */
 if (!isLoggedIn()) {
     echo json_encode(['status' => 'error', 'message' => 'Unauthorized']);
     exit;
 }
 
-/* ================= GET ALL RATES ================= */
-if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'get_all') {
+$user_id = $_SESSION['user_id'];
 
-    $result = $conn->query("SELECT * FROM categories");
+/* ================= GET ================= */
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
-    if (!$result) {
-        echo json_encode(['status' => 'error', 'message' => $conn->error]);
+    $action = $_GET['action'] ?? '';
+
+    // ACTIVE
+    if ($action === 'get_all') {
+
+        $result = $conn->query("
+            SELECT * FROM categories 
+            WHERE is_deleted = 0
+            ORDER BY name ASC
+        ");
+
+        $data = [];
+        while ($row = $result->fetch_assoc()) {
+            $data[] = $row;
+        }
+
+        echo json_encode(['status'=>'success','data'=>$data]);
         exit;
     }
 
-    $data = [];
+    // TRASH
+    if ($action === 'get_deleted') {
 
-    while ($row = $result->fetch_assoc()) {
-        $data[] = $row;
+        $result = $conn->query("
+            SELECT * FROM categories 
+            WHERE is_deleted = 1
+            ORDER BY deleted_at DESC
+        ");
+
+        $data = [];
+        while ($row = $result->fetch_assoc()) {
+            $data[] = $row;
+        }
+
+        echo json_encode(['status'=>'success','data'=>$data]);
+        exit;
     }
-
-    echo json_encode([
-        'status' => 'success',
-        'data' => $data
-    ]);
-    exit;
 }
 
-/* ================= UPDATE RATE ================= */
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && $_POST['action'] === 'update_rate') {
+/* ================= POST ================= */
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    $id = $_POST['id'] ?? null;
-    $rate = $_POST['rate'] ?? null;
+    $action = $_POST['action'] ?? '';
 
-    if (!$id || !$rate) {
-        echo json_encode(['status' => 'error', 'message' => 'Missing fields']);
+    /* ================= ADD ================= */
+    if ($action === 'add_category') {
+
+        $name = trim($_POST['name'] ?? '');
+        $rate = floatval($_POST['rate'] ?? 0);
+
+        if ($name === '' || $rate <= 0) {
+            echo json_encode(['status'=>'error','message'=>'Invalid input']);
+            exit;
+        }
+
+        $stmt = $conn->prepare("
+            INSERT INTO categories (name, rate_per_kwh, is_deleted)
+            VALUES (?, ?, 0)
+        ");
+        $stmt->bind_param("sd", $name, $rate);
+        $stmt->execute();
+
+        echo json_encode(['status'=>'success','message'=>'Category added']);
         exit;
     }
 
-    $stmt = $conn->prepare("
-        UPDATE categories 
-        SET rate_per_kwh=? 
-        WHERE id=?
-    ");
+    /* ================= UPDATE ================= */
+    if ($action === 'update_rate') {
 
-    if (!$stmt) {
-        echo json_encode(['status' => 'error', 'message' => $conn->error]);
+        $id = intval($_POST['id'] ?? 0);
+        $rate = floatval($_POST['rate'] ?? 0);
+
+        $stmt = $conn->prepare("
+            UPDATE categories 
+            SET rate_per_kwh = ?
+            WHERE id = ? AND is_deleted = 0
+        ");
+        $stmt->bind_param("di", $rate, $id);
+        $stmt->execute();
+
+        echo json_encode(['status'=>'success','message'=>'Rate updated']);
         exit;
     }
 
-    $stmt->bind_param("di", $rate, $id);
+    /* ================= DELETE (SOFT + 2FA) ================= */
+    if ($action === 'delete_rate') {
 
-    if ($stmt->execute()) {
-        echo json_encode(['status' => 'success', 'message' => 'Rate updated']);
-    } else {
-        echo json_encode(['status' => 'error', 'message' => $stmt->error]);
+        $id = intval($_POST['id'] ?? 0);
+        $password = $_POST['password'] ?? '';
+
+        if ($id <= 0 || $password === '') {
+            echo json_encode(['status'=>'error','message'=>'Invalid request']);
+            exit;
+        }
+
+        // verify admin
+        $stmt = $conn->prepare("SELECT password FROM users WHERE id=?");
+        $stmt->bind_param("i", $user_id);
+        $stmt->execute();
+        $user = $stmt->get_result()->fetch_assoc();
+
+        if (!$user || !password_verify($password, $user['password'])) {
+            echo json_encode(['status'=>'error','message'=>'Wrong password']);
+            exit;
+        }
+
+        $stmt = $conn->prepare("
+            UPDATE categories 
+            SET is_deleted = 1, deleted_at = NOW()
+            WHERE id = ?
+        ");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+
+        echo json_encode(['status'=>'success','message'=>'Moved to trash']);
+        exit;
     }
 
-    exit;
+    /* ================= RESTORE ================= */
+    if ($action === 'restore') {
+
+        $id = intval($_POST['id'] ?? 0);
+
+        $stmt = $conn->prepare("
+            UPDATE categories 
+            SET is_deleted = 0, deleted_at = NULL
+            WHERE id = ?
+        ");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+
+        echo json_encode(['status'=>'success','message'=>'Restored']);
+        exit;
+    }
+
+    /* ================= FORCE DELETE ================= */
+    if ($action === 'force_delete') {
+
+        $id = intval($_POST['id'] ?? 0);
+
+        $stmt = $conn->prepare("
+            DELETE FROM categories 
+            WHERE id = ? AND is_deleted = 1
+        ");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+
+        echo json_encode(['status'=>'success','message'=>'Permanently deleted']);
+        exit;
+    }
 }
 
-/* ================= ADD CATEGORY ================= */
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && $_POST['action'] === 'add_category') {
-
-    $name = $_POST['name'] ?? '';
-    $rate = $_POST['rate'] ?? '';
-
-    if ($name === '' || $rate === '') {
-        echo json_encode(['status' => 'error', 'message' => 'Missing fields']);
-        exit;
-    }
-
-    $stmt = $conn->prepare("
-        INSERT INTO categories (name, rate_per_kwh)
-        VALUES (?, ?)
-    ");
-
-    if (!$stmt) {
-        echo json_encode(['status' => 'error', 'message' => $conn->error]);
-        exit;
-    }
-
-    $stmt->bind_param("sd", $name, $rate);
-
-    if ($stmt->execute()) {
-        echo json_encode(['status' => 'success', 'message' => 'Category added']);
-    } else {
-        echo json_encode(['status' => 'error', 'message' => $stmt->error]);
-    }
-
-    exit;
-}
-
-/* ================= DELETE CATEGORY (OPTIONAL) ================= */
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && $_POST['action'] === 'delete_category') {
-
-    $id = $_POST['id'] ?? null;
-
-    $stmt = $conn->prepare("DELETE FROM categories WHERE id=?");
-
-    if (!$stmt) {
-        echo json_encode(['status' => 'error', 'message' => $conn->error]);
-        exit;
-    }
-
-    $stmt->bind_param("i", $id);
-
-    if ($stmt->execute()) {
-        echo json_encode(['status' => 'success', 'message' => 'Deleted']);
-    } else {
-        echo json_encode(['status' => 'error', 'message' => $stmt->error]);
-    }
-
-    exit;
-}
-
-echo json_encode(['status' => 'error', 'message' => 'Invalid request']);
-?>
+echo json_encode(['status'=>'error','message'=>'Invalid request']);
