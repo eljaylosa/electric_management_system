@@ -75,7 +75,7 @@
             </div>
         </div>
 
-        <h2>My Billing History</h2>
+        <h2>My Billing and Payment History</h2>
         <div class="filters" style="margin: 15px 0; display: flex; gap: 10px;">
     
             <select id="statusFilter">
@@ -97,6 +97,7 @@
                     <tr>
                         <th>Due Date</th>
                         <th>Reading (Prev/Curr)</th>
+                        <th>kWh Used</th>
                         <th>Amount</th>
                         <th>Status</th>
                         <th>Actions</th>
@@ -214,6 +215,16 @@
                 return 'unpaid';
             }
 
+            function getKwhColor(kwh) {
+                let numKwh = parseFloat(kwh) || 0;
+
+                if (numKwh >= 500) return '#e74c3c';  // RED - High
+                if (numKwh >= 200) return '#f39c12';  // ORANGE - Medium  
+                if (numKwh >= 50) return '#f1c40f';   // YELLOW - Normal
+
+                return '#27ae60'; // GREEN - Low
+            }
+
             function renderTable(data) {
                 let rows = '';
 
@@ -221,6 +232,17 @@
                     rows = '<tr><td colspan="5" style="text-align:center;">No billing history found.</td></tr>';
                 } else {
                     data.forEach(bill => {
+                        let kwh = 0;
+
+                       
+                        const prev = parseFloat(bill.prev_reading);
+                        const curr = parseFloat(bill.curr_reading);
+
+                        if (!isNaN(prev) && !isNaN(curr)) {
+                            kwh = (curr - prev).toFixed(2);
+                        }
+
+                        const kwhColor = getKwhColor(kwh);
 
                         const is_due = isDue(bill);
 
@@ -236,6 +258,7 @@
                             <tr>
                                 <td>${bill.due_date}</td>
                                 <td>${bill.prev_reading} / ${bill.curr_reading}</td>
+                                <td style="color:${kwhColor}; font-weight:bold;"">${kwh} kWh</td>
                                 <td>₱${parseFloat(bill.amount).toFixed(2)}</td>
 
                                 <!-- ✅ SINGLE STATUS COLUMN -->
