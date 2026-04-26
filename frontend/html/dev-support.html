@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="../../images/logo/electricity_logo2.png">
+  <title>Support the devs</title>
+</head>
+<style>
+  body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', sans-serif;
+  
+      /* 🔥 gradient background */
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      color: white;
+  
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+  }
+  
+  /* HEADER */
+  .support-header {
+      text-align: center;
+      margin-bottom: 30px;
+  }
+  
+  .support-header h1 {
+      font-size: 26px;
+      margin-bottom: 10px;
+  }
+  
+  .support-header h3 {
+      font-weight: 400;
+      color: #ddd;
+  }
+  
+  /* CARD CONTAINER */
+  .gcash-container {
+      display: flex;
+      justify-content: center;
+  }
+  
+  /* 🔥 GLASS CARD */
+  .gcash-card {
+      width: 350px;
+  
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(15px);
+  
+      border-radius: 20px;
+      padding: 20px;
+  
+      text-align: center;
+      color: white;
+  
+      box-shadow: 0 15px 30px rgba(0,0,0,0.3);
+  
+      transition: transform 0.3s ease;
+  }
+  
+  .gcash-card:hover {
+      transform: translateY(-5px);
+  }
+  
+  /* HEADER */
+  .gcash-header img {
+      width: 140px;
+      margin-bottom: 15px;
+  }
+  
+  /* QR BOX */
+  .qr-container {
+      background-color: white;
+      border-radius: 20px;
+      padding: 25px 20px;
+      color: #333;
+  }
+  
+  /* QR */
+  .qr-code img {
+      width: 200px;
+      height: 200px;
+      margin-bottom: 10px;
+      border-radius: 10px;
+  }
+  
+  /* TEXTS */
+  .fee-text {
+      font-size: 11px;
+      color: #666;
+      margin-bottom: 15px;
+  }
+  
+  /* NAME */
+  .account-name {
+      color: #007dfe;
+      font-size: 22px;
+      font-weight: bold;
+      margin-bottom: 10px;
+  }
+  
+  /* DETAILS */
+  .account-details p {
+      font-size: 13px;
+      color: #777;
+      margin: 5px 0;
+  }
+  
+  .account-details span {
+      color: #333;
+      font-weight: 600;
+  }
+  
+  /* 🔥 OPTIONAL BUTTON */
+  .support-btn {
+      margin-top: 20px;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 8px;
+      background: #00c853;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.2s;
+  }
+  
+  .support-btn:hover {
+      background: #00a844;
+  }
+  </style>
+<body>
+ 
+  <div class="support-header" style="text-align: center; margin-bottom: 20px;">
+    <h1>If this system has served you well, consider supporting our development.</h1>
+    <h3>Any amount will do to support the developers! ❤️</h3>
+  </div>
+
+<div class="gcash-container">
+    <div class="gcash-card">
+        <div class="gcash-header">
+            <img src="../../images/gcash-logo.png" alt="GCash Logo">
+        </div>
+        <div class="qr-container">
+            <div class="qr-code">
+            
+                <img src="../../images/qr-code.png" alt="QR Code">
+            </div>
+            
+            <p class="fee-text">Transfer fees may apply.</p>
+            
+            <h2 class="account-name">EL**Y L.</h2>
+            
+            <div class="account-details">
+                <p>Mobile No.: <span>+63 942 663 ****</span></p>
+                <p>User ID: <span>**********7MQMA5</span></p>
+            </div>
+        </div>
+    </div>
+</div>
+<button class="support-btn">💚 Thank you for your support!</button>
+</body>
+</html>

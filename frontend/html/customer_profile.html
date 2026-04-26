@@ -11,7 +11,58 @@
 <script src="../js/notification.js"></script>
 <script src="../js/theme.js"></script>
 
+
+
 <style>
+     /* Container ng button para sa proper spacing */
+.support-button {
+    background: linear-gradient(45deg, #007dfe, #00c6ff); /* GCash Blue Gradient */
+    color: white;
+    padding: 12px 25px;
+    border: none;
+    border-radius: 50px; /* Rounded shape */
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease; /* Para sa smooth animation */
+    box-shadow: 0 4px 15px rgba(0, 125, 254, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Hover Effect: Lalaki ng konti at mas mag-glow */
+.support-button:hover {
+    transform: translateY(-3px); /* Tatalon ng konti pataas */
+    box-shadow: 0 8px 25px rgba(0, 125, 254, 0.5);
+    background: linear-gradient(45deg, #00c6ff, #007dfe); /* Reverse gradient */
+}
+
+/* Active Effect: Kapag pinindot */
+.support-button:active {
+    transform: translateY(1px);
+}
+
+/* Ang "Shine" Animation: May dadaan na liwanag sa button */
+.support-button::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -60%;
+    width: 20%;
+    height: 200%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: rotate(30deg);
+    transition: all 0.5s;
+}
+
+.support-button:hover::after {
+    left: 120%; /* Lilipad yung liwanag sa kabilang side */
+}
+
+    
 /* body{
     background:#f5f7fb;
     font-family: Arial, sans-serif;
@@ -178,6 +229,12 @@ input {
         </li>
         <li>
             <button id="themeToggle">🌙</button>
+        </li>
+        <li>|</li>
+        <li>
+            <button class="support-button" onclick="location.href='dev-support.html'">
+                <span>❤️</span> Support the devs
+            </button>
         </li>
       </ul>
     </div>
