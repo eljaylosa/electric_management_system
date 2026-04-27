@@ -107,6 +107,11 @@
             <h3>Total Unpaid</h3>
             <div class="value" id="totalUnpaid">₱0.00</div>
         </div>
+        <!-- ive added this -->
+        <div class="card">
+            <h3>Total Kwh Used</h3>
+            <div class="value" id="totalKwh">0</div>  
+        </div>
         <div class="card">
             <h3>Collection Rate</h3>
             <div class="value" id="collectionRate">0%</div>
@@ -116,6 +121,9 @@
     <h2>Reports Chart</h2>
 
     <div id="reportsChart" style="min-height: 350px;"></div>
+
+    <h2>Monthly kWh Trend</h2>
+    <div id="kwhChart" style="min-height: 350px;"></div>
 
     <h2>Detailed Billing Report</h2>
 
@@ -142,6 +150,83 @@
 <script>
 $(document).ready(function(){
 
+        function isDarkMode() {
+        return document.body.classList.contains('dark');
+    }
+
+    //line chart
+    let kwhChart;
+
+    function renderKwhChart(data) {
+
+        let textColor = isDarkMode() ? '#ffffff' : '#333';
+
+        let monthlyData = {};
+
+        data.forEach(bill => {
+
+            if (!bill.due_date) return;
+
+            let date = new Date(bill.due_date);
+            if (isNaN(date)) return;
+
+            let month = date.toLocaleString('default', { month: 'short' });
+
+            let kwh = parseFloat(bill.curr_reading) - parseFloat(bill.prev_reading);
+            if (isNaN(kwh)) kwh = 0;
+
+            if (!monthlyData[month]) monthlyData[month] = 0;
+
+            monthlyData[month] += kwh;
+        });
+
+        let labels = Object.keys(monthlyData);
+        let values = Object.values(monthlyData);
+
+        let options = {
+            chart: {
+                type: 'line',
+                height: 350
+            },
+
+            series: [{
+                name: 'kWh Used',
+                data: values
+            }],
+
+            xaxis: {
+                categories: labels,
+                labels: {
+                    style: {
+                        colors: textColor
+                    }
+                }
+            },
+
+            yaxis: {
+                labels: {
+                    style: {
+                        colors: textColor
+                    }
+                }
+            },
+
+            title: {
+                text: 'Monthly Electricity Usage',
+                style: {
+                    color: textColor
+                }
+            }
+        };
+
+        if (kwhChart) {
+            kwhChart.updateOptions(options);
+        } else {
+            kwhChart = new ApexCharts(document.querySelector("#kwhChart"), options);
+            kwhChart.render();
+        }
+    }
+
     // render chart
     let chart;
 
@@ -150,6 +235,35 @@ $(document).ready(function(){
         let paid = 0;
         let unpaid = 0;
         let due = 0;
+
+        let textColor = isDarkMode() ? '#ffffff' : '#333';
+
+        let option = {
+            chart: {
+                type: 'donut',
+                height: 350
+            },
+            series: [paid, unpaid, due],
+            labels: ['Paid', 'Unpaid', 'Due'],
+            colors: ['#2ecc71', '#e74c3c', '#f1c40f'],
+
+            theme: {
+                  mode: isDarkMode() ? 'dark' : 'light'
+            },
+
+            legend: {
+                labels: {
+                    colors: textColor
+                }
+            },
+
+            title:  {
+                text: 'Billing Status Overview',
+                style: {
+                    color: textColor
+                }
+            }
+        };
 
         data.forEach(bill => {
 
@@ -228,7 +342,8 @@ $(document).ready(function(){
 
     /* ================= RENDER ================= */
     function renderReport(data){
-
+    
+    let totalKwh = 0;
     let rows = '';
     let paid = 0;
     let unpaid = 0;
@@ -251,6 +366,8 @@ $(document).ready(function(){
         // compute kWh
         let kwh = parseFloat(bill.curr_reading) - parseFloat(bill.prev_reading);
         if (isNaN(kwh)) kwh = 0;
+
+        totalKwh += kwh;
 
         if (status === 'paid') {
             paid += amount;
@@ -286,12 +403,14 @@ $(document).ready(function(){
 
     $('#totalRevenue').text('₱' + paid.toFixed(2));
     $('#totalUnpaid').text('₱' + unpaid.toFixed(2));
+    $('#totalKwh').text(totalKwh.toFixed(2) + ' kWh');
 
     let total = paid + unpaid;
     let rate = total ? (paid / total * 100).toFixed(1) : 0;
     $('#collectionRate').text(rate + '%');
 
     renderChart(data);
+    renderKwhChart(data);
     }
 
     /* ================= FILTER ================= */

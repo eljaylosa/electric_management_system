@@ -9,6 +9,11 @@ $(document).ready(function () {
   // toggle theme
   $('#themeToggle').click(function () {
 
+    setTimeout(() => {
+      renderChart(reportData);
+      renderKwhChart(reportData);
+  }, 200);
+  
     let current = document.documentElement.getAttribute("data-theme");
 
     if (current === "dark") {
