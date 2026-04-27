@@ -6,18 +6,11 @@ ini_set('display_errors', 1);
 require_once 'config.php';
 require_once 'auth.php';
 
-
 header('Content-Type: application/json');
-
 
 // Enable error reporting for debugging
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
-
-// if (!isLoggedIn()) {
-//     echo json_encode(['status' => 'error', 'message' => 'Unauthorized']);
-//     exit;
-// }
 
 /* ================= GET REQUESTS ================= */
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {

@@ -17,35 +17,6 @@ $user_id = $_SESSION['user_id'];
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $action = $_GET['action'] ?? '';
 
-    // if ($action === 'get_all') {
-    //     $stmt = $conn->prepare("
-    //         SELECT 
-    //             c.id, c.name, c.address, c.contact, c.meter_no,
-    //             c.category_id,
-    //             COALESCE(cat.name, 'Uncategorized') AS category_name
-    //         FROM consumers c
-    //         LEFT JOIN categories cat ON cat.id = c.category_id
-    //         WHERE c.is_deleted = 0
-    //     ");
-    //     // $stmt = $conn->prepare("
-    //     //     SELECT c.id, c.name, c.address, c.contact, c.meter_no,
-    //     //            c.category_id,
-    //     //            IFNULL(cat.name, 'Uncategorized') AS category_name
-    //     //     FROM consumers c
-    //     //     LEFT JOIN categories cat ON c.category_id = cat.id
-    //     //     WHERE c.is_deleted = 0
-    //     // ");
-    //     $stmt->bind_param("i", $user_id);
-    //     $stmt->execute();
-    //     $result = $stmt->get_result();
-    //     $data = [];
-    //     while ($row = $result->fetch_assoc()) {
-    //         $data[] = $row;
-    //     }
-    //     echo json_encode(['status' => 'success', 'data' => $data]);
-    //     exit;
-    // }
-
     // get_consumer_info (get only the consumer name and meter_no) ✅ FIXED
     if ($action === 'get_consumer_info') {
         $stmt = $conn->prepare("
@@ -166,10 +137,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         echo json_encode(['status' => 'success', 'data' => $data]);
         exit;
     }
-
-    
-
-
 }
 
 /* ================= POST ================= */
@@ -262,7 +229,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // UPDATE ✅ FULLY FIXED - NO CRASHES
+    // UPDATE FULLY FIXED
     if ($action === 'update') {
 
         $id = (int)($_POST['id'] ?? 0);
@@ -295,7 +262,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
         $consumer_user_id = $row['user_id'];
     
-        // 🔥 UPDATE consumers
+        // UPDATE consumers
         $stmt = $conn->prepare("
             UPDATE consumers 
             SET name=?, address=?, contact=?, meter_no=?, category_id=?
@@ -304,7 +271,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->bind_param("ssssii", $name, $address, $contact, $meter_no, $category_id, $id);
         $success = $stmt->execute();
     
-        // 🔥 UPDATE users email (ONLY ONCE)
+        // UPDATE users email (ONLY ONCE)
         if ($success) {
             $updateUser = $conn->prepare("
                 UPDATE users 
@@ -324,21 +291,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // DELETE ✅ FIXED
-    // if ($action === 'delete') {
-    //     $id = (int)($_POST['id'] ?? 0);
-        
-    //     $stmt = $conn->prepare("DELETE FROM consumers WHERE id = ? AND user_id = ?");
-    //     $stmt->bind_param("ii", $id, $user_id);
-    //     $success = $stmt->execute();
-        
-    //     echo json_encode([
-    //         'status' => $success ? 'success' : 'error',
-    //         'message' => $success ? 'Deleted successfully!' : $stmt->error
-    //     ]);
-    //     exit;
-    // }
-
+   
     // consumers.php
     if ($action === 'delete') {
 
@@ -353,7 +306,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
     
-        // ✅ Verify admin password
+        // Verify admin password
         $stmt = $conn->prepare("SELECT password FROM users WHERE id = ? AND role = 'admin'");
         $stmt->bind_param("i", $user_id);
         $stmt->execute();
@@ -368,7 +321,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
     
-        // ✅ Soft delete WITH user protection
+        // Soft delete WITH user protection
         $stmt = $conn->prepare("
             UPDATE consumers 
             SET is_deleted = 1, deleted_at = NOW() 
@@ -388,10 +341,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]);
         }
     
-        exit; // 🔥 VERY IMPORTANT
+        exit; 
     }
 
-    // RESTORE CONSUMER ✅ FIXED
+    // RESTORE CONSUMER
     if ($action === 'restore') {
         $id = intval($_POST['id'] ?? 0);
     
@@ -410,7 +363,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // FORCE DELETE CONSUMER ✅ FIXED
+    // FORCE DELETE CONSUMER
     if ($action === 'force_delete') {
         $id = intval($_POST['id'] ?? 0);
     

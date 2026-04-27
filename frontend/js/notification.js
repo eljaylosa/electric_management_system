@@ -8,7 +8,7 @@
 
 (function () {
     function safeInit() {
-        if (typeof $ === 'undefined') {  // ✅ FIXED: 'undefined' not ''
+        if (typeof $ === 'undefined') {  // FIXED: 'undefined' not ''
             console.error("jQuery is not loaded");
             return;
         }

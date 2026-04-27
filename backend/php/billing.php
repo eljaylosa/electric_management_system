@@ -273,14 +273,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         "billing"
                     );  
 
-                    // sendNotification(
-                    //     $conn,
-                    //     $sender_id,
-                    //     $receiver_id,
-                    //     "New bill generated. Amount: ₱" . number_format($amount, 2),
-                    //     "bill"
-                    // );
-
                     echo json_encode(['status' => 'success', 'message' => 'Reading and bill created']);
                 } else {
                     echo json_encode(['status' => 'error', 'message' => 'Bill creation failed']);

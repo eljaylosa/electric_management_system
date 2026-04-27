@@ -224,7 +224,7 @@
                 });
             }
         
-            // 🔥 ALL INITIALIZATION
+            // ALL INITIALIZATION
             loadConsumers();
             initNotifications();
             loadCategories();
@@ -242,7 +242,7 @@
                 $('#consumerFormContainer').hide();
             });
         
-            // 🔥 FIXED FORM SUBMIT (handles both ADD + EDIT)
+            // FIXED FORM SUBMIT (handles both ADD + EDIT)
             $('#consumerForm').on('submit', function(e) {
                 e.preventDefault();
 
@@ -252,7 +252,7 @@
 
                         alert(res.message);
 
-                        // 🔥 SHOW GENERATED METER NO
+                        // SHOW GENERATED METER NO
                         if(res.meter_no){
                             $('#meter_no').val(res.meter_no);
                         }
@@ -266,7 +266,7 @@
                 }, 'json');
             });
         
-            // 🔥 FIXED EDIT BUTTON (event delegation)
+            // FIXED EDIT BUTTON (event delegation)
             $(document).on('click', '.editBtn', function() {
                 const id = $(this).data('id');
                 console.log('Edit ID:', id);
@@ -280,7 +280,7 @@
                 }, 'json');
             });
         
-            // 🔥 FIXED DELETE BUTTON (event delegation)
+            // FIXED DELETE BUTTON (event delegation)
             let deleteId = null;
 
             // Open modal
@@ -338,7 +338,7 @@
 
         });
         
-        // 🔥 HELPER FUNCTIONS (must be global)
+        // HELPER FUNCTIONS (must be global)
         function populateForm(data) {
             $('#consumerId').val(data.id);
             $('#name').val(data.name);
@@ -346,7 +346,7 @@
             $('#contact').val(data.contact || '');
             $('#meter_no').val(data.meter_no);
 
-            // 🔥 ADD THIS
+            // ADD THIS
             $('#email').val(data.email || '');
 
             setTimeout(() => {
@@ -362,3 +362,6 @@
             }, 500);
         }
         </script>
+    
+</body>
+</html>

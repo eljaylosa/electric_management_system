@@ -77,7 +77,7 @@
         <h1>Billing Management</h1>
         <button class="btn btn-success" id="addReadingBtn">➕ Add New Reading</button>
 
-        <!-- 🔥 FIXED Filter bar with Clear button -->
+        <!--  Filter bar with Clear button -->
         <div class="filter-bar" style="margin: 15px 0; display: flex; gap: 10px; flex-wrap: wrap; align-items: end;">
             <input type="text" id="billSearch" placeholder="🔍 Search consumers..." style="flex:1; padding:10px;">
             <select id="statusFilter" style="padding:10px;">
@@ -100,7 +100,7 @@
             <button class="btn btn-secondary" id="clearFilters" style="padding:10px 15px; white-space:nowrap;">🔄 Clear</button>
         </div>
 
-        <!-- Add form (same) -->
+        <!-- Add form -->
         <div id="readingFormContainer">
             <h2 id="formTitle">➕ Add New Reading</h2>
             <form id="readingForm">
@@ -144,10 +144,10 @@ $(document).ready(function() {
     $('#navToggle').click(() => $('#navMenu').toggleClass('active'));
     $('#yearFilter').val(new Date().getFullYear());
 
-    // 🔥 Store all bills for filtering
+    // Store all bills for filtering
     let allBillsData = [];
 
-    // 🔥 kWh Color coding function
+    // kWh Color coding function
     function getKwhColor(kwh) {
         const numKwh = parseFloat(kwh) || 0;
         if (numKwh >= 500) return '#e74c3c';  // RED - High
@@ -165,7 +165,7 @@ $(document).ready(function() {
         return (bill.status === 'unpaid') && (due < today);
     }
 
-    // 🔥 FIXED loadBills with data storage
+    // FIXED loadBills with data storage
     function loadBills() {
         $.ajax({
             url: '../../backend/php/billing.php?action=get_all_bills',
@@ -204,7 +204,7 @@ $(document).ready(function() {
         });
     }
 
-    // 🔥 Populate months from data
+    // Populate months from data
     function populateMonthFilter() {
 
     const months = [
@@ -231,7 +231,7 @@ $(document).ready(function() {
     $('#monthFilter').html(options);
     }
 
-    // 🔥 FIXED renderBills with data attributes
+    // FIXED renderBills with data attributes
     function renderBills(data) {
         if (!data?.length) {
             $('#billsTable tbody').html('<tr><td colspan="8" style="text-align:center; padding:20px;">No bills match filters</td></tr>');
@@ -244,12 +244,12 @@ $(document).ready(function() {
             let status = (bill.status || 'unpaid').toLowerCase();
             const kwhColor = getKwhColor(kwh);
 
-            // 🔥 override if overdue
+            // override if overdue
             if (isDue(bill)) {
                 status = 'due';
             }
 
-            // ✅ PROPER COLOR SYSTEM
+            // PROPER COLOR SYSTEM
             let statusColor = '#e74c3c'; // unpaid default
 
             if (status === 'paid') {
@@ -301,7 +301,7 @@ $(document).ready(function() {
     }
 
 
-    // 🔥 FIXED Filtering system
+    // FIXED Filtering system
     function applyFilters() {
         const search = ($('#billSearch').val() || '').toLowerCase();
         const statusFilter = ($('#statusFilter').val() || '').toLowerCase();
@@ -312,7 +312,7 @@ $(document).ready(function() {
 
             const consumerName = (bill.consumer_name || '').toLowerCase();
 
-            // 🔥 FIX: compute real status (with due)
+            // compute real status (with due)
             let status = (bill.status || 'unpaid').toLowerCase();
 
             if (isDue(bill)) {
@@ -369,14 +369,14 @@ $(document).ready(function() {
         renderBills(filteredData);
     }
 
-    // 🔥 FIXED Filter events
+    // FIXED Filter events
     $('#billSearch').on('input', applyFilters);
     $('#statusFilter').on('change', applyFilters);
     $('#monthFilter').on('change', applyFilters);
     $('#yearFilter').on('input', applyFilters);
     $('#kwhFilter').on('change', applyFilters);
 
-    // 🔥 Clear filters
+    // Clear filters
     $('#clearFilters').click(function() {
         $('#billSearch').val('');
         $('#statusFilter').val('');

@@ -6,7 +6,7 @@ require_once 'notification_helper.php';
 $admin = $conn->query("SELECT id FROM users WHERE role = 'admin' LIMIT 1")->fetch_assoc();
 $admin_id = $admin['id'];
 
-// get bills due in 2 days (you can change interval)
+// get bills due in 2 days 
 $stmt = $conn->prepare("
     SELECT b.id, b.due_date, c.user_id
     FROM bills b

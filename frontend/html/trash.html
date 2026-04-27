@@ -6,7 +6,7 @@
   <title>Trash Bin</title>
   <link rel="icon" type="image/png" href="../../images/logo/electricity_logo2.png">
 
-  <!-- ✅ ADD JQUERY -->
+  <!-- ADD JQUERY -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
   <style>
@@ -38,7 +38,7 @@
 <script>
 $(document).ready(function() {
 
-    // 🔥 LOAD TRASH
+    // LOAD TRASH
     function loadTrash() {
         $.get('../../backend/php/consumers.php?action=get_deleted', function(res) {
             let rows = '';
@@ -74,7 +74,7 @@ $(document).ready(function() {
         });
     }
 
-    // 🔥 RESTORE
+    // RESTORE
     $(document).on('click', '.restoreBtn', function() {
         const id = $(this).data('id');
 
@@ -91,7 +91,7 @@ $(document).ready(function() {
         }, 'json');
     });
 
-    // 🔥 PERMANENT DELETE
+    // PERMANENT DELETE
     $(document).on('click', '.deleteForeverBtn', function() {
         const id = $(this).data('id');
 
@@ -110,7 +110,7 @@ $(document).ready(function() {
         }, 'json');
     });
 
-    // 🔥 INITIAL LOAD (VERY IMPORTANT)
+    // INITIAL LOAD (VERY IMPORTANT)
     loadTrash();
 
 });
