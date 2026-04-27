@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contact Admin</title>
+
+<link rel="icon" type="image/png" href="../../images/logo/electricity_logo2.png">
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="../css/theme.css">
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<style>
+.contact-container {
+    max-width: 500px;
+    margin: 50px auto;
+    background: var(--card-bg, #fff);
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+}
+
+.contact-container h2 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.contact-container input,
+.contact-container textarea {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 12px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+}
+
+.contact-container textarea {
+    resize: none;
+    height: 120px;
+}
+
+.btn-send {
+    width: 100%;
+    padding: 10px;
+    background: #007dfe;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.btn-send:hover {
+    background: #005fd1;
+}
+</style>
+</head>
+
+<body>
+
+<div class="contact-container">
+    <h2>📩 Contact Admin</h2>
+
+    <input type="text" id="name" placeholder="Your Name">
+    <input type="email" id="email" placeholder="Your Email">
+    <textarea id="message" placeholder="Your Message"></textarea>
+
+    <button class="btn-send" id="sendBtn">Send Message</button>
+</div>
+
+<script>
+$('#sendBtn').click(function(){
+
+    let name = $('#name').val().trim();
+    let email = $('#email').val().trim();
+    let message = $('#message').val().trim();
+
+    // ✅ Validation
+    if (!name || !email || !message) {
+        alert("All fields are required");
+        return;
+    }
+
+    let btn = $(this);
+    btn.text("Sending...").prop("disabled", true);
+
+    $.post('../../backend/php/contact_admin.php', {
+        name: name,
+        email: email,
+        message: message
+    }, function(res){
+
+        alert(res.message);
+
+        btn.text("Send Message").prop("disabled", false);
+
+        if (res.status === 'success') {
+            $('#name, #email, #message').val('');
+        }
+
+    }, 'json');
+
+});
+</script>
+
+</body>
+</html>

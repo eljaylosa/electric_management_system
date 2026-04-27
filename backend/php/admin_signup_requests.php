@@ -168,15 +168,47 @@ if ($action === 'approve_request') {
 /* ================= REJECT ================= */
 if ($action === 'reject_request') {
 
+    require_once 'mailer.php';
+
+    $reason = $_POST['reason'] ?? '';
+
+    if (!$reason) {
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'Reason is required'
+        ]);
+        exit;
+    }
+
+    // get request info (email)
+    $stmt = $conn->prepare("SELECT email, full_name FROM consumer_requests WHERE id=?");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $req = $stmt->get_result()->fetch_assoc();
+
+    if (!$req) {
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'Request not found'
+        ]);
+        exit;
+    }
+
+    // update status
     $stmt = $conn->prepare("
-        UPDATE consumer_requests SET status='rejected' WHERE id=?
+        UPDATE consumer_requests 
+        SET status='rejected' 
+        WHERE id=?
     ");
     $stmt->bind_param("i", $id);
     $stmt->execute();
 
+    // 🔥 send rejection email
+    sendRejectionEmail($req['email'], $req['full_name'], $reason);
+
     echo json_encode([
         'status' => 'success',
-        'message' => 'Request rejected'
+        'message' => 'Request rejected and email sent'
     ]);
 
     exit;
