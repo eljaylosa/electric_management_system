@@ -186,6 +186,26 @@ input {
 .summary-box small {
     color: var(--muted);
 }
+
+.password-wrapper {
+    position: relative;
+    margin-bottom: 10px;
+}
+
+.password-wrapper input {
+    width: 100%;
+    padding: 10px;
+}
+
+.togglePass {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    font-size: 18px;
+    user-select: none;
+}
 </style>
 </head>
 
@@ -294,10 +314,17 @@ input {
     <!-- PASSWORD -->
     <div class="section">
         <h3>Change Password</h3>
-
-        <input type="password" id="oldPass" placeholder="Old Password">
-        <input type="password" id="newPass" placeholder="New Password">
-
+    
+        <div class="password-wrapper">
+            <input type="password" id="oldPass" placeholder="Old Password">
+            <span class="togglePass" data-target="oldPass">👁️</span>
+        </div>
+    
+        <div class="password-wrapper">
+            <input type="password" id="newPass" placeholder="New Password">
+            <span class="togglePass" data-target="newPass">👁️</span>
+        </div>
+    
         <button class="btn" id="changePassBtn">Update Password</button>
     </div>
 
@@ -328,6 +355,20 @@ input {
 
 <script>
     $(document).ready(function(){
+
+        //toggle eye pass
+        $('.togglePass').click(function () {
+            const targetId = $(this).data('target');
+            const input = $('#' + targetId);
+
+            if (input.attr('type') === 'password') {
+                input.attr('type', 'text');
+                $(this).text('🙈'); // change icon
+            } else {
+                input.attr('type', 'password');
+                $(this).text('👁️');
+            }
+        });
 
     /* ================= LOAD PROFILE ================= */
     function loadProfile(){
@@ -422,28 +463,35 @@ input {
     // Change Password
     $('#changePassBtn').click(function () {
 
-      let oldPass = $('#oldPass').val();
-      let newPass = $('#newPass').val();
+        let oldPass = $('#oldPass').val().trim();
+        let newPass = $('#newPass').val().trim();
 
-      if (!oldPass || !newPass) {
-          alert("Fill both fields");
-          return;
-      }
+        // EMPTY CHECK
+        if (!oldPass || !newPass) {
+            alert("Fill both fields");
+            return;
+        }
 
-      $.post('../../backend/php/profile.php', {
-          action: 'change_password',
-          old: oldPass,
-          new: newPass
-      }, function (res) {
+        // 🔥 PASSWORD LENGTH CHECK (4–8 chars)
+        if (newPass.length < 4 || newPass.length > 8) {
+            alert("New password must be 4 to 8 characters only");
+            return;
+        }
 
-          if (res.status === "success") {
-              alert(res.message);
-              $('#oldPass, #newPass').val('');
-          } else {
-              alert(res.message);
-          }
+        $.post('../../backend/php/profile.php', {
+            action: 'change_password',
+            old: oldPass,
+            new: newPass
+        }, function (res) {
 
-      }, 'json');
+            if (res.status === "success") {
+                alert(res.message);
+                $('#oldPass, #newPass').val('');
+            } else {
+                alert(res.message);
+            }
+
+        }, 'json');
     });
 
     
